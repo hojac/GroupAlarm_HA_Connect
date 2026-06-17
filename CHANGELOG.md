@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.1] - 2026-06-17
+
+### Added
+- Added `Rückmeldefrist Status` sensor.
+- Added countdown/status attributes: `seconds_remaining`, `deadline`, and `is_active`.
+- Improved dashboard example with countdown and deadline status card.
+
+### Changed
+- Clarified that feedback buttons become unavailable after the alarm feedback deadline, while confirmed feedback remains visible.
+
 ## [0.3.0] - 2026-06-17
 
 ### Breaking changes

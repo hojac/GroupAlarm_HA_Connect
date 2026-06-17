@@ -109,15 +109,23 @@ def _alarm_end(coordinator: GroupAlarmCoordinator) -> datetime | None:
     return _parse_datetime(_get_path(coordinator.alarm, "endDate"))
 
 
-def _format_countdown(end: datetime | None) -> str:
+def _remaining_seconds(end: datetime | None) -> int | None:
     if end is None:
-        return "unbekannt"
+        return None
     now = dt_util.utcnow()
     if now.tzinfo is None:
         now = now.replace(tzinfo=timezone.utc)
     if end.tzinfo is None:
         end = end.replace(tzinfo=timezone.utc)
-    remaining = int((end - now).total_seconds())
+    return int((end - now).total_seconds())
+
+
+def _format_countdown(end: datetime | None) -> str:
+    if end is None:
+        return "unbekannt"
+    remaining = _remaining_seconds(end)
+    if remaining is None:
+        return "unbekannt"
     if remaining <= 0:
         return "abgelaufen"
     minutes, seconds = divmod(remaining, 60)
@@ -127,12 +135,25 @@ def _format_countdown(end: datetime | None) -> str:
     return f"{minutes:02d}:{seconds:02d}"
 
 
+def _deadline_status(coordinator: GroupAlarmCoordinator) -> str:
+    if not coordinator.alarm:
+        return "kein Alarm"
+    end = _alarm_end(coordinator)
+    if end is None:
+        return "unbekannt"
+    remaining = _remaining_seconds(end)
+    if remaining is None:
+        return "unbekannt"
+    return "aktiv" if remaining > 0 else "abgelaufen"
+
+
 SENSORS: tuple[SensorEntityDescription, ...] = (
     SensorEntityDescription(key="alarm_id", name="Alarm ID"),
     SensorEntityDescription(key="message", name="Einsatzmeldung"),
     SensorEntityDescription(key="start", name="Alarmierung Start", device_class=SensorDeviceClass.TIMESTAMP),
     SensorEntityDescription(key="end", name="Rückmeldefrist Ende", device_class=SensorDeviceClass.TIMESTAMP),
     SensorEntityDescription(key="countdown", name="Rückmeldefrist Countdown"),
+    SensorEntityDescription(key="deadline_status", name="Rückmeldefrist Status"),
     SensorEntityDescription(key="event", name="Einsatznummer"),
     SensorEntityDescription(key="address", name="Einsatzort"),
     SensorEntityDescription(key="latitude", name="Latitude"),
@@ -167,7 +188,7 @@ class GroupAlarmSensor(CoordinatorEntity[GroupAlarmCoordinator], SensorEntity):
 
     async def async_added_to_hass(self) -> None:
         await super().async_added_to_hass()
-        if self.entity_description.key == "countdown":
+        if self.entity_description.key in ("countdown", "deadline_status"):
             self._unsub_countdown = async_track_time_interval(
                 self.hass,
                 self._async_countdown_tick,
@@ -195,6 +216,8 @@ class GroupAlarmSensor(CoordinatorEntity[GroupAlarmCoordinator], SensorEntity):
             if not alarm:
                 return "kein Alarm"
             return _format_countdown(_alarm_end(self.coordinator))
+        if key == "deadline_status":
+            return _deadline_status(self.coordinator)
         if key == "event":
             return _get_path(alarm, "event", "name")
         if key == "address":
@@ -214,3 +237,16 @@ class GroupAlarmSensor(CoordinatorEntity[GroupAlarmCoordinator], SensorEntity):
         if key == "user_id":
             return self.coordinator.user_id
         return None
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any] | None:
+        key = self.entity_description.key
+        if key not in ("countdown", "deadline_status"):
+            return None
+        end = _alarm_end(self.coordinator)
+        remaining = _remaining_seconds(end)
+        return {
+            "seconds_remaining": max(remaining, 0) if remaining is not None else None,
+            "deadline": end.isoformat() if end else None,
+            "is_active": self.coordinator.is_alert_active,
+        }
