@@ -79,7 +79,7 @@ class GroupAlarmCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     def device_info(self) -> dict[str, Any]:
         return {
             "identifiers": {(DOMAIN, str(self.organization_id))},
-            "name": f"GroupAlarm {self.organization_name}",
+            "name": f"GroupAlarm HA Connect {self.organization_name}",
             "manufacturer": "GroupAlarm",
             "entry_type": "service",
         }

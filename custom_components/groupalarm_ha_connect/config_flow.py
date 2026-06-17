@@ -103,9 +103,9 @@ class GroupAlarmConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 await self.async_set_unique_id(f"user_{self._user_id}")
                 self._abort_if_unique_id_configured()
                 selected_names = {org_id: names.get(org_id, org_id) for org_id in selected}
-                title = "GroupAlarm"
+                title = "GroupAlarm HA Connect"
                 if len(selected) == 1:
-                    title = f"GroupAlarm {selected_names[selected[0]]}"
+                    title = f"GroupAlarm HA Connect {selected_names[selected[0]]}"
                 return self.async_create_entry(
                     title=title,
                     data={

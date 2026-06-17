@@ -2,8 +2,23 @@
 
 Home Assistant Integration für GroupAlarm mit Unterstützung für Alarmierungen, Rückmeldungen, Einsatzorte und Alarmmonitor-Dashboards.
 
-> **Hinweis zu Version 0.3.x:**  
+> **Hinweis zu Version 0.3.0:**  
 > Die Integrations-Domain wurde von `groupalarm` auf `groupalarm_ha_connect` geändert. Dadurch ist diese Version eine neue Integration für Home Assistant. Entferne bei Bedarf die alte Testintegration und richte diese Version neu ein.
+
+
+## Hinweis zu Entity-IDs ab 0.3.2
+
+Home Assistant Entity-IDs dürfen keine Bindestriche enthalten. Daher verwendet die Integration den Präfix `groupalarm_ha_connect` statt `groupalarm-ha-connect`.
+
+Ab Version 0.3.2 wird der Gerätename auf **GroupAlarm HA Connect <Organisation>** gesetzt. Bei einer Neueinrichtung entstehen dadurch Entity-IDs wie:
+
+```text
+sensor.groupalarm_ha_connect_lgw_fuhrung_einsatzmeldung
+binary_sensor.groupalarm_ha_connect_lgw_fuhrung_aktive_alarmierung
+button.groupalarm_ha_connect_lgw_fuhrung_komme
+```
+
+Bei bestehenden Installationen benennt Home Assistant bereits registrierte Entitäten nicht automatisch um. Entferne die alte Integration und richte sie neu ein, wenn du die neuen Entity-IDs automatisch erzeugen lassen möchtest.
 
 ## Features
 
@@ -93,7 +108,6 @@ button.groupalarm_ha_connect_lgw_fuhrung_komme
 | Alarmierung Start | Zeitpunkt der Alarmierung |
 | Rückmeldefrist Ende | Ende der Alarmierung/Rückmeldefrist |
 | Rückmeldefrist Countdown | Verbleibende Zeit bis zum Ende der Rückmeldefrist |
-| Rückmeldefrist Status | Status der Rückmeldefrist: `aktiv`, `abgelaufen`, `unbekannt` oder `kein Alarm` |
 | Meine Rückmeldung | Eigene Rückmeldung |
 | Rückmeldungen Positiv | Anzahl positiver Rückmeldungen der Einheit |
 | Rückmeldungen Negativ | Anzahl negativer Rückmeldungen der Einheit |
@@ -115,7 +129,7 @@ button.groupalarm_ha_connect_lgw_fuhrung_komme
 | Komme | Positive Rückmeldung |
 | Komme nicht | Negative Rückmeldung |
 
-Die Buttons sind nur verfügbar, solange die Alarmierung aktiv ist. Die eigene Rückmeldung wird erst nach erfolgreicher Serverbestätigung aktualisiert. Nach Ablauf der Rückmeldefrist werden die Button-Entitäten automatisch unavailable; die bestätigte Rückmeldung bleibt über den Sensor `Meine Rückmeldung` sichtbar.
+Die Buttons sind nur verfügbar, solange die Alarmierung aktiv ist. Die eigene Rückmeldung wird erst nach erfolgreicher Serverbestätigung aktualisiert.
 
 ### Device Tracker
 
@@ -169,53 +183,12 @@ cards:
         - white-space: normal
         - text-align: center
 
-  - type: horizontal-stack
-    cards:
-      - type: custom:button-card
-        entity: sensor.groupalarm_ha_connect_lgw_fuhrung_ruckmeldefrist_countdown
-        name: Rückmeldefrist
-        icon: mdi:timer-outline
-        show_state: true
-        styles:
-          card:
-            - padding: 14px
-            - border-radius: 15px
-          state:
-            - font-size: 26px
-            - font-weight: bold
-      - type: custom:button-card
-        entity: sensor.groupalarm_ha_connect_lgw_fuhrung_ruckmeldefrist_status
-        name: Status
-        icon: mdi:clock-check-outline
-        show_state: true
-        state:
-          - value: aktiv
-            styles:
-              card:
-                - background-color: "#2e7d32"
-              icon:
-                - color: white
-              name:
-                - color: white
-              state:
-                - color: white
-          - value: abgelaufen
-            styles:
-              card:
-                - background-color: "#616161"
-              icon:
-                - color: white
-              name:
-                - color: white
-              state:
-                - color: white
-        styles:
-          card:
-            - padding: 14px
-            - border-radius: 15px
-          state:
-            - font-size: 20px
-            - font-weight: bold
+  - type: custom:button-card
+    entity: sensor.groupalarm_ha_connect_lgw_fuhrung_ruckmeldefrist_countdown
+    name: Rückmeldefrist
+    show_icon: true
+    icon: mdi:timer-outline
+    show_state: true
 
   - type: horizontal-stack
     cards:
@@ -313,7 +286,7 @@ Die Buttons werden erst farblich hervorgehoben, nachdem der GroupAlarm Server di
 Aktuelle Version:
 
 ```text
-0.3.1
+0.3.0
 ```
 
 Die Integration befindet sich in aktiver Entwicklung.
@@ -321,3 +294,8 @@ Die Integration befindet sich in aktiver Entwicklung.
 ## Haftungsausschluss
 
 Dieses Projekt ist ein unabhängiges Open-Source-Projekt und steht in keiner offiziellen Verbindung zur GroupAlarm GmbH.
+
+
+## Aktuelle Version
+
+Aktuelle Version: `0.3.2`

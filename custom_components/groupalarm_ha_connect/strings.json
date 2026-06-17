@@ -2,7 +2,7 @@
   "config": {
     "step": {
       "user": {
-        "title": "GroupAlarm einrichten",
+        "title": "GroupAlarm HA Connect einrichten",
         "description": "Trage deinen Personal Access Token ein. Die verfügbaren Organisationen werden danach automatisch geladen.",
         "data": {
           "personal_access_token": "Personal Access Token",
@@ -29,7 +29,7 @@
   "options": {
     "step": {
       "init": {
-        "title": "GroupAlarm Optionen",
+        "title": "GroupAlarm HA Connect Optionen",
         "description": "Passe Organisationen und Aktualisierungsintervall an.",
         "data": {
           "organization_ids": "Organisationen",

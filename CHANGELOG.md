@@ -2,15 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
-## [0.3.1] - 2026-06-17
-
-### Added
-- Added `Rückmeldefrist Status` sensor.
-- Added countdown/status attributes: `seconds_remaining`, `deadline`, and `is_active`.
-- Improved dashboard example with countdown and deadline status card.
+## [0.3.2] - 2026-06-17
 
 ### Changed
-- Clarified that feedback buttons become unavailable after the alarm feedback deadline, while confirmed feedback remains visible.
+- Changed device name prefix to **GroupAlarm HA Connect** so new installations create clearer Entity-IDs such as `sensor.groupalarm_ha_connect_<organization>_...`.
+- Updated Config Flow entry titles to **GroupAlarm HA Connect**.
+- Updated README notes for Entity-ID naming.
+
+### Notes
+- Home Assistant does not allow hyphens in Entity-IDs, so the Entity-ID prefix is `groupalarm_ha_connect`, not `groupalarm-ha-connect`.
+- Existing entity IDs are not renamed automatically by Home Assistant. Remove and re-add the integration if you want the new IDs generated automatically.
 
 ## [0.3.0] - 2026-06-17
 
