@@ -1,0 +1,12 @@
+{
+  "domain": "groupalarm_ha_connect",
+  "name": "GroupAlarm HA Connect",
+  "codeowners": ["@hojac"],
+  "config_flow": true,
+  "dependencies": [],
+  "documentation": "https://github.com/hojac/GroupAlarm_HA_Connect",
+  "iot_class": "cloud_polling",
+  "issue_tracker": "https://github.com/hojac/GroupAlarm_HA_Connect/issues",
+  "requirements": [],
+  "version": "0.3.0"
+}

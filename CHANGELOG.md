@@ -2,79 +2,54 @@
 
 All notable changes to this project will be documented in this file.
 
----
+## [0.3.0] - 2026-06-17
+
+### Breaking changes
+- Changed integration domain from `groupalarm` to `groupalarm_ha_connect`.
+- Changed custom component folder from `custom_components/groupalarm` to `custom_components/groupalarm_ha_connect`.
+- Existing installations using the old domain must remove the old integration and add the new one again.
+
+### Changed
+- Corrected project name to **GroupAlarm HA Connect**.
+- Updated HACS metadata and manifest URLs.
 
 ## [0.2.3] - 2026-06-17
 
 ### Added
-
-* Added active alarming binary sensor (`Aktive Alarmierung`)
-* Added countdown sensor for feedback deadline
-* Added feedback deadline end sensor
-* Added device tracker for alarm location
-* Added multi-organization support
-* Added automatic organization discovery
-* Added Home Assistant Config Flow
-* Added Home Assistant Options Flow
+- Added `Aktive Alarmierung` binary sensor.
+- Added `Rückmeldefrist Ende` timestamp sensor.
+- Added `Rückmeldefrist Countdown` sensor.
+- Added automatic disabling of feedback buttons after the feedback deadline.
 
 ### Changed
-
-* Renamed `Aktiver Einsatz` to `Aktive Alarmierung`
-* Renamed `Einsatzende` to `Rückmeldefrist Ende`
-* Improved dashboard compatibility
-* Improved feedback handling
-
-### Fixed
-
-* Fixed timestamp handling for Home Assistant timestamp sensors
-* Fixed feedback synchronization after button press
-* Fixed alarm update handling
-* Fixed API refresh after feedback submission
-
----
+- Renamed alarm-state wording from Einsatz-focused naming to alarm-window naming.
+- Confirmed feedback remains visible after the feedback deadline expires.
 
 ## [0.2.2] - 2026-06-17
 
-### Added
-
-* Initial feedback support
-* Alarm reload after feedback submission
-
-### Fixed
-
-* Fixed communication with GroupAlarm feedback endpoint
-* Fixed sensor update issues
-
----
+### Changed
+- Feedback is posted via `/api/v1/messaging/feedback`.
+- Feedback state is only updated after server confirmation.
+- Full alarm reload after feedback submission via `/alarm/{alarmID}?update_for_user=true`.
 
 ## [0.2.1] - 2026-06-17
 
 ### Fixed
-
-* Fixed timestamp parsing
-* Fixed Home Assistant device class timestamp compatibility
-
----
+- Fixed timestamp handling for Home Assistant timestamp sensors.
+- Fixed feedback synchronization after button press.
 
 ## [0.2.0] - 2026-06-17
 
 ### Added
-
-* Automatic organization discovery
-* Multi-organization support
-* Config Flow
-* Options Flow
-* Device Tracker support
-* Dashboard example
-
----
+- Automatic organization discovery.
+- Multi-organization support.
+- Options Flow for organization selection and scan interval.
+- Device tracker for alarm location.
 
 ## [0.1.0] - 2026-06-17
 
 ### Added
-
-* Initial release
-* Alarm sensors
-* Feedback buttons
-* Alarm location support
-* GroupAlarm API integration
+- Initial test release.
+- Alarm sensors.
+- Feedback buttons.
+- Basic GroupAlarm API polling.

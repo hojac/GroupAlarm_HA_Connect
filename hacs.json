@@ -1,6 +1,7 @@
 {
-  "name": "GroupAlarm",
+  "name": "GroupAlarm HA Connect",
   "content_in_root": false,
   "render_readme": true,
+  "domains": ["groupalarm_ha_connect"],
   "homeassistant": "2024.6.0"
 }
