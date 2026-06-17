@@ -100,16 +100,16 @@ Integration
 
 ```yaml
 type: custom:button-card
-entity: binary_sensor.groupalarm_lgw_fuhrung_aktive_alarmierung
+entity: binary_sensor.groupalarm_ORGA_aktive_alarmierung
 show_icon: true
 show_name: true
 show_label: true
 
 name: >
-  [[[ return states['sensor.groupalarm_lgw_fuhrung_einsatznummer']?.state || 'Kein Alarm'; ]]]
+  [[[ return states['sensor.groupalarm_ORGA_einsatznummer']?.state || 'Kein Alarm'; ]]]
 
 label: >
-  [[[ return states['sensor.groupalarm_lgw_fuhrung_einsatzmeldung']?.state || ''; ]]]
+  [[[ return states['sensor.groupalarm_ORGA_einsatzmeldung']?.state || ''; ]]]
 ```
 
 ---
