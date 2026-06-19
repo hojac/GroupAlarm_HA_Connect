@@ -1,13 +1,27 @@
 # Changelog
 
-All notable changes to this project will be documented in this file.
+## 0.3.5
+
+### Changed
+- Config flow now supports multiple integration instances for the same GroupAlarm user/token when different organization selections are used.
+- Duplicate protection is now based on token hash and selected organization IDs instead of only the GroupAlarm user ID.
+
+## [0.3.4] - 2026-06-19
+
+### Changed
+- Updated `icon.png` and `logo.png` with the final GroupAlarm HA Connect branding.
+- Added optimized 256×256 integration icon for HACS/Home Assistant display.
+- Updated integration version to 0.3.4.
 
 ## [0.3.3] - 2026-06-17
 
 ### Added
-- Added integration icon
-- Added integration logo
-- Added branding assets for HACS/Home Assistant display
+- Added project icon and logo assets for HACS/Home Assistant display.
+
+### Changed
+- Updated integration version to 0.3.3.
+
+All notable changes to this project will be documented in this file.
 
 ## [0.3.2] - 2026-06-17
 

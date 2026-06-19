@@ -1,16 +1,18 @@
 # GroupAlarm HA Connect
 
+> Ab Version 0.3.5 können mehrere Instanzen mit unterschiedlichen Organisationsauswahlen parallel eingerichtet werden.
+
 Home Assistant Integration für GroupAlarm mit Unterstützung für Alarmierungen, Rückmeldungen, Einsatzorte und Alarmmonitor-Dashboards.
 
 > **Hinweis zu Version 0.3.0:**  
 > Die Integrations-Domain wurde von `groupalarm` auf `groupalarm_ha_connect` geändert. Dadurch ist diese Version eine neue Integration für Home Assistant. Entferne bei Bedarf die alte Testintegration und richte diese Version neu ein.
 
 
-## Hinweis zu Entity-IDs ab 0.3.2
+## Hinweis zu Entity-IDs ab 0.3.5
 
 Home Assistant Entity-IDs dürfen keine Bindestriche enthalten. Daher verwendet die Integration den Präfix `groupalarm_ha_connect` statt `groupalarm-ha-connect`.
 
-Ab Version 0.3.2 wird der Gerätename auf **GroupAlarm HA Connect <Organisation>** gesetzt. Bei einer Neueinrichtung entstehen dadurch Entity-IDs wie:
+Ab Version 0.3.5 wird der Gerätename auf **GroupAlarm HA Connect <Organisation>** gesetzt. Bei einer Neueinrichtung entstehen dadurch Entity-IDs wie:
 
 ```text
 sensor.groupalarm_ha_connect_lgw_fuhrung_einsatzmeldung
@@ -281,6 +283,11 @@ POST /api/v1/messaging/feedback
 
 Die Buttons werden erst farblich hervorgehoben, nachdem der GroupAlarm Server die Rückmeldung erfolgreich bestätigt hat. Nach Ablauf der Rückmeldefrist bleiben bereits abgegebene Rückmeldungen sichtbar.
 
+
+## Icon / Logo
+
+This release includes custom `icon.png` and `logo.png` assets for use by Home Assistant and HACS.
+
 ## Projektstatus
 
 Aktuelle Version:
@@ -298,4 +305,9 @@ Dieses Projekt ist ein unabhängiges Open-Source-Projekt und steht in keiner off
 
 ## Aktuelle Version
 
-Aktuelle Version: `0.3.2`
+Aktuelle Version: `0.3.5`
+
+
+## Branding
+
+This release includes `icon.png` and `logo.png` for HACS and Home Assistant display.

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import Any
+import hashlib
 
 import voluptuous as vol
 
@@ -100,7 +101,9 @@ class GroupAlarmConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             if not selected:
                 errors["base"] = "no_organizations_selected"
             else:
-                await self.async_set_unique_id(f"user_{self._user_id}")
+                token_hash = hashlib.sha1((self._token or "").encode()).hexdigest()[:12]
+                org_key = "_".join(sorted(selected))
+                await self.async_set_unique_id(f"user_{self._user_id}_token_{token_hash}_orgs_{org_key}")
                 self._abort_if_unique_id_configured()
                 selected_names = {org_id: names.get(org_id, org_id) for org_id in selected}
                 title = "GroupAlarm HA Connect"
