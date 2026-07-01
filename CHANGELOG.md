@@ -1,3 +1,13 @@
+## [0.3.7] - 2026-06-19
+
+### Added
+- Added `dashboard_templates/wall_display_card.yaml` as a ready-to-copy Lovelace wall display template.
+- Template includes alarm header, unit feedback counters, feedback deadline, personal feedback buttons, location and map.
+- Template uses a single placeholder `__GA_PREFIX__` that can be replaced once for each organization/entity prefix.
+
+### Changed
+- Updated README with dashboard template usage instructions.
+
 
 ## [0.3.6] - 2026-06-19
 
