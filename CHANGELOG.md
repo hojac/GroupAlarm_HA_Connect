@@ -1,3 +1,14 @@
+
+## [0.3.6] - 2026-06-19
+
+### Fixed
+- Rückmeldefrist/Countdown lädt jetzt den vollständigen Alarm per `GET /alarm/{alarmID}?update_for_user=true`, weil der Listen-Endpunkt nicht immer alle Zeit- und Rückmeldedetails enthält.
+- Rückmeldefrist nutzt zusätzliche Fallback-Felder (`event.endDate`, `event.scheduledEndtime`, `scheduledEndTime`, `scheduledEndtime`).
+- `Aktive Alarmierung` ist bei fehlender/unklarer Rückmeldefrist nicht mehr automatisch aktiv.
+
+### Added
+- Neuer Sensor `Alarmzeitpunkt` als direkt lesbarer Zeitstempel für Dashboard-Karten.
+
 # Changelog
 
 ## 0.3.5

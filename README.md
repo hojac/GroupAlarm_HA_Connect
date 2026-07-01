@@ -311,3 +311,11 @@ Aktuelle Version: `0.3.5`
 ## Branding
 
 This release includes `icon.png` and `logo.png` for HACS and Home Assistant display.
+
+
+## Version 0.3.6
+
+- Countdown/Rückmeldefrist wird aus dem vollständigen Alarmdatensatz berechnet.
+- Zusätzliche Fallback-Felder für das Ende der Rückmeldefrist.
+- Neuer Sensor `Alarmzeitpunkt` für die Anzeige im Alarmmonitor.
+- Hinweis: Button-Farben im Dashboard sollten ausschließlich auf `sensor.<prefix>_meine_rueckmeldung` reagieren.

@@ -105,8 +105,39 @@ def _feedback_value(coordinator: GroupAlarmCoordinator) -> str:
     return "offen"
 
 
+def _first_datetime(*values: Any) -> datetime | None:
+    for value in values:
+        parsed = _parse_datetime(value)
+        if parsed is not None:
+            return parsed
+    return None
+
+
+def _alarm_start(coordinator: GroupAlarmCoordinator) -> datetime | None:
+    alarm = coordinator.alarm
+    return _first_datetime(
+        _get_path(alarm, "startDate"),
+        _get_path(alarm, "event", "startDate"),
+        _get_path(alarm, "startTime"),
+    )
+
+
 def _alarm_end(coordinator: GroupAlarmCoordinator) -> datetime | None:
-    return _parse_datetime(_get_path(coordinator.alarm, "endDate"))
+    alarm = coordinator.alarm
+    return _first_datetime(
+        _get_path(alarm, "endDate"),
+        _get_path(alarm, "event", "endDate"),
+        _get_path(alarm, "event", "scheduledEndtime"),
+        _get_path(alarm, "scheduledEndTime"),
+        _get_path(alarm, "scheduledEndtime"),
+    )
+
+
+def _format_alarm_time(start: datetime | None) -> str | None:
+    if start is None:
+        return None
+    local = dt_util.as_local(start)
+    return local.strftime("%d.%m.%Y %H:%M")
 
 
 def _remaining_seconds(end: datetime | None) -> int | None:
@@ -151,6 +182,7 @@ SENSORS: tuple[SensorEntityDescription, ...] = (
     SensorEntityDescription(key="alarm_id", name="Alarm ID"),
     SensorEntityDescription(key="message", name="Einsatzmeldung"),
     SensorEntityDescription(key="start", name="Alarmierung Start", device_class=SensorDeviceClass.TIMESTAMP),
+    SensorEntityDescription(key="alarm_time", name="Alarmzeitpunkt"),
     SensorEntityDescription(key="end", name="Rückmeldefrist Ende", device_class=SensorDeviceClass.TIMESTAMP),
     SensorEntityDescription(key="countdown", name="Rückmeldefrist Countdown"),
     SensorEntityDescription(key="deadline_status", name="Rückmeldefrist Status"),
@@ -209,7 +241,9 @@ class GroupAlarmSensor(CoordinatorEntity[GroupAlarmCoordinator], SensorEntity):
         if key == "message":
             return _get_path(alarm, "message")
         if key == "start":
-            return _parse_datetime(_get_path(alarm, "startDate"))
+            return _alarm_start(self.coordinator)
+        if key == "alarm_time":
+            return _format_alarm_time(_alarm_start(self.coordinator))
         if key == "end":
             return _alarm_end(self.coordinator)
         if key == "countdown":

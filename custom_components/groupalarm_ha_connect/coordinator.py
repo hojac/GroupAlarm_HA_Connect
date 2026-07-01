@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import timedelta, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from homeassistant.core import HomeAssistant
@@ -9,6 +9,42 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 
 from .api import GroupAlarmApiClient, GroupAlarmApiError
 from .const import DOMAIN
+
+
+def _parse_datetime(value: Any) -> datetime | None:
+    if value in (None, "", "unknown", "unavailable"):
+        return None
+    if isinstance(value, datetime):
+        return value if value.tzinfo else value.replace(tzinfo=timezone.utc)
+    if isinstance(value, str):
+        parsed = dt_util.parse_datetime(value)
+        if parsed is None:
+            return None
+        return parsed if parsed.tzinfo else parsed.replace(tzinfo=timezone.utc)
+    return None
+
+
+def _get_path(data: dict[str, Any] | None, *keys: str) -> Any:
+    cur: Any = data
+    for key in keys:
+        if not isinstance(cur, dict) or key not in cur:
+            return None
+        cur = cur[key]
+    return cur
+
+
+def _alarm_deadline(alarm: dict[str, Any] | None) -> datetime | None:
+    for value in (
+        _get_path(alarm, "endDate"),
+        _get_path(alarm, "event", "endDate"),
+        _get_path(alarm, "event", "scheduledEndtime"),
+        _get_path(alarm, "scheduledEndTime"),
+        _get_path(alarm, "scheduledEndtime"),
+    ):
+        parsed = _parse_datetime(value)
+        if parsed is not None:
+            return parsed
+    return None
 
 
 class GroupAlarmCoordinator(DataUpdateCoordinator[dict[str, Any]]):
@@ -62,14 +98,9 @@ class GroupAlarmCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         alarm = self.alarm
         if not alarm:
             return False
-        end_date = alarm.get("endDate")
-        if not end_date:
-            return True
-        parsed = dt_util.parse_datetime(end_date) if isinstance(end_date, str) else end_date
+        parsed = _alarm_deadline(alarm)
         if parsed is None:
             return False
-        if parsed.tzinfo is None:
-            parsed = parsed.replace(tzinfo=timezone.utc)
         now = dt_util.utcnow()
         if now.tzinfo is None:
             now = now.replace(tzinfo=timezone.utc)
@@ -89,12 +120,20 @@ class GroupAlarmCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             if self.user is None:
                 self.user = await self.api.get_current_user()
             alarm = await self.api.get_latest_alarm(self.organization_id)
-            if alarm is not None and self._confirmed_feedback_alarm_id is not None:
+
+            # The paginated /alarms endpoint may omit endDate / own feedback details.
+            # For the current latest alarm, load the full alarm payload as the canonical
+            # state source so countdown and button colors are based on the server value.
+            if alarm is not None:
                 try:
                     alarm_id = int(alarm.get("id"))
                 except (TypeError, ValueError):
                     alarm_id = None
-                if alarm_id != self._confirmed_feedback_alarm_id:
+                if alarm_id is not None:
+                    full_alarm = await self.api.get_alarm(alarm_id, update_for_user=True)
+                    if full_alarm is not None:
+                        alarm = {**alarm, **full_alarm}
+                if self._confirmed_feedback_alarm_id is not None and alarm_id != self._confirmed_feedback_alarm_id:
                     self._confirmed_feedback_alarm_id = None
                     self._confirmed_feedback_state = None
             return {"alarm": alarm, "user": self.user}
