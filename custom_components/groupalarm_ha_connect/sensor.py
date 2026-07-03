@@ -43,7 +43,7 @@ def _parse_datetime(value: Any) -> datetime | None:
 def _response_to_state(response: Any) -> str | None:
     """Convert GroupAlarm feedback variants to the public sensor state."""
     if isinstance(response, dict):
-        for key in ("response", "feedback", "value", "positive"):
+        for key in ("response", "feedback", "value", "positive", "feedbackState", "answer"):
             if key in response:
                 return _response_to_state(response[key])
     if response is True:
@@ -52,10 +52,12 @@ def _response_to_state(response: Any) -> str | None:
         return "komme_nicht"
     if isinstance(response, str):
         normalized = response.strip().lower()
-        if normalized in ("true", "positive", "positiv", "komme", "yes", "ja"):
+        if normalized in ("true", "positive", "positiv", "komme", "yes", "ja", "accepted", "coming"):
             return "komme"
-        if normalized in ("false", "negative", "negativ", "komme_nicht", "nein", "no"):
+        if normalized in ("false", "negative", "negativ", "komme_nicht", "komme nicht", "nein", "no", "declined", "not_coming"):
             return "komme_nicht"
+        if normalized in ("unknown", "none", "null", "open", "offen", "pending", "no_feedback"):
+            return None
     return None
 
 
@@ -72,14 +74,8 @@ def _feedback_value(coordinator: GroupAlarmCoordinator) -> str:
     if not alarm:
         return "offen"
 
-    # Some endpoints may already include the current user's feedback directly.
-    for key in ("selfFeedback", "ownFeedback", "myFeedback"):
-        if key in alarm:
-            state = _response_to_state(alarm.get(key))
-            if state:
-                return state
-
-    # Otherwise, try to find the current user in the alarm feedback list.
+    # First try to find the current user in the alarm feedback list. Aggregated
+    # counters or feedback from other users must never color the local buttons.
     if uid:
         for item in alarm.get("feedback", []) or []:
             if not isinstance(item, dict):
@@ -90,11 +86,22 @@ def _feedback_value(coordinator: GroupAlarmCoordinator) -> str:
             except (TypeError, ValueError):
                 matches_user = False
             if matches_user:
-                for key in ("response", "feedback", "value", "positive"):
+                for key in ("response", "feedback", "value", "positive", "feedbackState", "answer"):
                     if key in item:
                         state = _response_to_state(item.get(key))
                         if state:
                             return state
+                # A user-matching item without a usable answer still means no
+                # confirmed personal feedback is known yet. Keep the UI neutral.
+                return "offen"
+
+    # Some full endpoints expose an explicit personal-feedback object. Only use
+    # it when it is not a bare boolean/aggregate fallback.
+    for key in ("selfFeedback", "ownFeedback", "myFeedback"):
+        if isinstance(alarm.get(key), dict):
+            state = _response_to_state(alarm.get(key))
+            if state:
+                return state
 
     # If GroupAlarm acknowledged our POST but the list endpoint does not expose
     # per-user feedback, keep the confirmed server response for this alarm.
@@ -123,10 +130,15 @@ def _alarm_start(coordinator: GroupAlarmCoordinator) -> datetime | None:
 
 
 def _alarm_end(coordinator: GroupAlarmCoordinator) -> datetime | None:
+    """Return feedback/deadline timestamp when GroupAlarm provides one.
+
+    The active-alarm binary sensor intentionally does not use this value.
+    """
     alarm = coordinator.alarm
     return _first_datetime(
-        _get_path(alarm, "endDate"),
-        _get_path(alarm, "event", "endDate"),
+        _get_path(alarm, "feedbackDeadline"),
+        _get_path(alarm, "feedbackEndDate"),
+        _get_path(alarm, "answerDeadline"),
         _get_path(alarm, "event", "scheduledEndtime"),
         _get_path(alarm, "scheduledEndTime"),
         _get_path(alarm, "scheduledEndtime"),

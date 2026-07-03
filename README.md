@@ -293,10 +293,50 @@ This release includes custom `icon.png` and `logo.png` assets for use by Home As
 Aktuelle Version:
 
 ```text
-0.3.0
+0.3.8
 ```
 
 Die Integration befindet sich in aktiver Entwicklung.
+
+
+
+## Dashboard Template: Wall Display Card
+
+Ab Version `0.3.7` liegt eine fertige Lovelace-Vorlage im Repository:
+
+```text
+dashboard_templates/wall_display_card.yaml
+```
+
+Die Vorlage enthält:
+
+- Alarmzeit
+- Einsatznummer
+- Einsatzmeldung
+- Rückmeldungen der Einheit als drei Zahlen: positiv, negativ, offen
+- Rückmeldefrist / Countdown
+- persönliche Rückmeldebuttons `Komme` und `Komme nicht`
+- Einsatzort
+- Karte
+
+### Verwendung
+
+1. Datei `dashboard_templates/wall_display_card.yaml` öffnen.
+2. Den kompletten YAML-Code in eine Lovelace-Karte kopieren.
+3. Den Platzhalter ersetzen:
+
+```text
+__GA_PREFIX__
+```
+
+Beispiel:
+
+```text
+groupalarm_ha_connect_lgw_lg_luchem
+```
+
+Damit müssen die Entity-IDs nicht einzeln angepasst werden. Pro Organisation wird nur der Prefix ersetzt.
+
 
 ## Haftungsausschluss
 
@@ -305,12 +345,20 @@ Dieses Projekt ist ein unabhängiges Open-Source-Projekt und steht in keiner off
 
 ## Aktuelle Version
 
-Aktuelle Version: `0.3.5`
+Aktuelle Version: `0.3.8`
 
 
 ## Branding
 
 This release includes `icon.png` and `logo.png` for HACS and Home Assistant display.
+
+
+## Version 0.3.8
+
+- `Aktive Alarmierung` wird jetzt unabhängig von der Rückmeldefrist erkannt.
+- `Meine Rückmeldung` bleibt bei neuen Einsätzen neutral, bis die eigene Rückmeldung vom Server bestätigt wurde.
+- Fremde Rückmeldungen werden nicht mehr als eigene Rückmeldung übernommen.
+- Rückmeldefrist/Countdown sind reine Informationswerte und blenden den Alarm nicht mehr aus.
 
 
 ## Version 0.3.6

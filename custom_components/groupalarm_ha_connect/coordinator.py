@@ -33,18 +33,16 @@ def _get_path(data: dict[str, Any] | None, *keys: str) -> Any:
     return cur
 
 
-def _alarm_deadline(alarm: dict[str, Any] | None) -> datetime | None:
-    for value in (
-        _get_path(alarm, "endDate"),
-        _get_path(alarm, "event", "endDate"),
-        _get_path(alarm, "event", "scheduledEndtime"),
-        _get_path(alarm, "scheduledEndTime"),
-        _get_path(alarm, "scheduledEndtime"),
-    ):
-        parsed = _parse_datetime(value)
-        if parsed is not None:
-            return parsed
-    return None
+def _alarm_closed_at(alarm: dict[str, Any] | None) -> datetime | None:
+    """Return the real alarm/event close timestamp, not the feedback deadline."""
+    return _parse_datetime(_get_path(alarm, "endDate")) or _parse_datetime(_get_path(alarm, "event", "endDate"))
+
+
+def _alarm_id(alarm: dict[str, Any] | None) -> int | None:
+    try:
+        return int(_get_path(alarm, "id"))
+    except (TypeError, ValueError):
+        return None
 
 
 class GroupAlarmCoordinator(DataUpdateCoordinator[dict[str, Any]]):
@@ -94,17 +92,21 @@ class GroupAlarmCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
     @property
     def is_alert_active(self) -> bool:
-        """Return true while the GroupAlarm feedback/alarming window is active."""
+        """Return true for the latest alarm while its event/alarm is not closed.
+
+        GroupAlarm also exposes deadline-like fields such as scheduledEndtime.
+        Those values are feedback/auto-close metadata and must not hide an
+        otherwise still open alarm from the dashboard.
+        """
         alarm = self.alarm
-        if not alarm:
+        if _alarm_id(alarm) is None:
             return False
-        parsed = _alarm_deadline(alarm)
-        if parsed is None:
+        if _alarm_closed_at(alarm) is not None:
             return False
-        now = dt_util.utcnow()
-        if now.tzinfo is None:
-            now = now.replace(tzinfo=timezone.utc)
-        return parsed > now
+        event = _get_path(alarm, "event")
+        if isinstance(event, dict) and event.get("archived") is True:
+            return False
+        return True
 
     @property
     def device_info(self) -> dict[str, Any]:
@@ -125,10 +127,7 @@ class GroupAlarmCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             # For the current latest alarm, load the full alarm payload as the canonical
             # state source so countdown and button colors are based on the server value.
             if alarm is not None:
-                try:
-                    alarm_id = int(alarm.get("id"))
-                except (TypeError, ValueError):
-                    alarm_id = None
+                alarm_id = _alarm_id(alarm)
                 if alarm_id is not None:
                     full_alarm = await self.api.get_alarm(alarm_id, update_for_user=True)
                     if full_alarm is not None:
@@ -144,7 +143,7 @@ class GroupAlarmCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         if not self.alarm or not self.user_id:
             raise GroupAlarmApiError("No alarm or user available")
         if not self.is_alert_active:
-            raise GroupAlarmApiError("Alarmierung ist nicht mehr aktiv; Rückmeldung nicht mehr möglich")
+            raise GroupAlarmApiError("Alarmierung ist nicht aktiv; Rückmeldung nicht möglich")
         alarm_id = int(self.alarm["id"])
 
         # The UI state must only change after GroupAlarm accepted the feedback.

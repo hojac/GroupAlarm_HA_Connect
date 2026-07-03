@@ -1,0 +1,208 @@
+# GroupAlarm HA Connect - Wall Display Card Template
+#
+# Usage:
+# 1. Copy this YAML block into a Lovelace dashboard.
+# 2. Replace every occurrence of __GA_PREFIX__ with your entity prefix, for example:
+#    groupalarm_ha_connect_lgw_lg_luchem
+#
+# Required custom card:
+# - custom:button-card
+
+type: vertical-stack
+cards:
+  - type: custom:button-card
+    entity: binary_sensor.__GA_PREFIX___aktive_alarmierung
+    show_icon: false
+    show_name: false
+    show_label: false
+    custom_fields:
+      alarmzeit: |
+        [[[
+          const zeit = states['sensor.__GA_PREFIX___alarmzeitpunkt']?.state || '—';
+          return '<span style="opacity:0.8;">Alarmzeit:</span> <b>' + zeit + '</b>';
+        ]]]
+      nummer: |
+        [[[
+          const nr = states['sensor.__GA_PREFIX___einsatznummer']?.state || 'Kein Alarm';
+          return '<span style="opacity:0.8;">E-NR:</span> <b>' + nr + '</b>';
+        ]]]
+      text: |
+        [[[
+          return states['sensor.__GA_PREFIX___einsatzmeldung']?.state || '';
+        ]]]
+    state:
+      - value: "on"
+        styles:
+          card:
+            - background-color: "#b71c1c"
+          custom_fields:
+            alarmzeit:
+              - color: white
+            nummer:
+              - color: white
+            text:
+              - color: white
+    styles:
+      grid:
+        - grid-template-areas: |
+            "alarmzeit"
+            "nummer"
+            "text"
+        - grid-template-columns: 1fr
+        - grid-template-rows: min-content min-content 1fr
+      card:
+        - min-height: 300px
+        - padding: 20px
+        - border-radius: 15px
+      custom_fields:
+        alarmzeit:
+          - justify-self: start
+          - align-self: start
+          - font-size: 16px
+          - margin-bottom: 8px
+        nummer:
+          - justify-self: start
+          - font-size: 28px
+          - font-weight: bold
+          - margin-bottom: 16px
+        text:
+          - justify-self: start
+          - align-self: start
+          - text-align: left
+          - white-space: normal
+          - font-size: 22px
+          - line-height: 1.4
+
+  - type: horizontal-stack
+    cards:
+      - type: custom:button-card
+        entity: sensor.__GA_PREFIX___ruckmeldungen_positive
+        show_icon: false
+        show_name: false
+        show_state: true
+        styles:
+          card:
+            - height: 90px
+            - border-radius: 15px
+          state:
+            - color: "#2e7d32"
+            - font-size: 34px
+            - font-weight: bold
+      - type: custom:button-card
+        entity: sensor.__GA_PREFIX___ruckmeldungen_negative
+        show_icon: false
+        show_name: false
+        show_state: true
+        styles:
+          card:
+            - height: 90px
+            - border-radius: 15px
+          state:
+            - color: "#b71c1c"
+            - font-size: 34px
+            - font-weight: bold
+      - type: custom:button-card
+        entity: sensor.__GA_PREFIX___ruckmeldungen_offen
+        show_icon: false
+        show_name: false
+        show_state: true
+        styles:
+          card:
+            - height: 90px
+            - border-radius: 15px
+          state:
+            - color: white
+            - font-size: 34px
+            - font-weight: bold
+
+  - type: custom:button-card
+    entity: sensor.__GA_PREFIX___ruckmeldefrist_countdown
+    name: Rückmeldefrist
+    show_icon: true
+    icon: mdi:timer-outline
+    show_state: true
+    styles:
+      icon:
+        - width: 40px
+        - height: 40px
+
+  - type: horizontal-stack
+    cards:
+      - type: custom:button-card
+        entity: sensor.__GA_PREFIX___meine_ruckmeldung
+        name: Komme
+        icon: mdi:check-circle
+        tap_action:
+          action: call-service
+          service: button.press
+          target:
+            entity_id: button.__GA_PREFIX___komme
+        state:
+          - value: komme
+            styles:
+              card:
+                - background-color: "#2e7d32"
+              icon:
+                - color: white
+              name:
+                - color: white
+        styles:
+          card:
+            - height: 120px
+            - border-radius: 15px
+          icon:
+            - width: 42px
+          name:
+            - font-size: 20px
+            - font-weight: bold
+      - type: custom:button-card
+        entity: sensor.__GA_PREFIX___meine_ruckmeldung
+        name: Komme nicht
+        icon: mdi:close-circle
+        tap_action:
+          action: call-service
+          service: button.press
+          target:
+            entity_id: button.__GA_PREFIX___komme_nicht
+        state:
+          - value: komme_nicht
+            styles:
+              card:
+                - background-color: "#b71c1c"
+              icon:
+                - color: white
+              name:
+                - color: white
+        styles:
+          card:
+            - height: 120px
+            - border-radius: 15px
+          icon:
+            - width: 42px
+          name:
+            - font-size: 20px
+            - font-weight: bold
+
+  - type: custom:button-card
+    entity: sensor.__GA_PREFIX___einsatzort
+    show_icon: false
+    name: >
+      [[[ return states['sensor.__GA_PREFIX___einsatzort']?.state || 'Kein Einsatzort'; ]]]
+    styles:
+      card:
+        - padding: 18px
+        - border-radius: 15px
+      name:
+        - font-size: 22px
+        - white-space: normal
+        - text-align: center
+
+  - type: map
+    show_all: false
+    entities:
+      - entity: device_tracker.__GA_PREFIX___einsatzort
+        name: +
+    hours_to_show: 1
+    aspect_ratio: "1:1"
+    default_zoom: 14
+    theme_mode: auto

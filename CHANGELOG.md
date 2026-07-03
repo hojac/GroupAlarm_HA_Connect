@@ -1,3 +1,17 @@
+## [0.3.8] - 2026-07-03
+
+### Fixed
+- `Aktive Alarmierung` bleibt bei laufendem Alarm aktiv, auch wenn keine Rückmeldefrist vorhanden oder diese bereits abgelaufen ist.
+- Die aktive Alarmierung wird nicht mehr aus `scheduledEndtime`/Rückmeldefrist abgeleitet, sondern aus vorhandenem Alarm und echtem Alarm-/Event-Ende.
+- `Meine Rückmeldung` wertet nur noch die Rückmeldung des konfigurierten Benutzers aus. Fremde negative oder positive Rückmeldungen beeinflussen den persönlichen Status nicht mehr.
+- Neue Alarme starten ohne bestätigte eigene Rückmeldung neutral mit `offen`.
+- Bestätigte Button-Farben werden weiterhin erst nach erfolgreicher Server-Antwort gesetzt.
+
+### Changed
+- Rückmeldefrist-/Countdown-Sensoren bleiben reine Informationssensoren und steuern nicht mehr die Sichtbarkeit des Einsatzes.
+- Version in `manifest.json` auf `0.3.8` angehoben.
+
+
 ## [0.3.7] - 2026-06-19
 
 ### Added
