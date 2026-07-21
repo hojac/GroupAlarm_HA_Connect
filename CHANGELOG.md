@@ -1,3 +1,16 @@
+## [0.3.9] - 2026-07-21
+
+### Fixed
+- `Meine Rückmeldung` wertet `feedback` nur aus, wenn der persönliche Eintrag den API-Status `RESPONDED` besitzt.
+- `UNAVAILABLE`, `TIMEDOUT`, fehlende Rückmeldungen und nicht eindeutig zuordenbare Einträge bleiben neutral als `unbekannt`; `feedback: false` allein wird nicht mehr als negative Rückmeldung interpretiert.
+- Ein erfolgreicher Feedback-POST setzt keinen lokalen Bestätigungsstatus mehr. Die Buttonfarbe wird ausschließlich aus dem anschließend vollständig von GroupAlarm gelesenen Alarmdatensatz ermittelt.
+- Persönliche Rückmeldungen bleiben an die aktuelle Alarm-ID gebunden und werden nicht auf einen neuen Alarm übertragen.
+- `alarm.endDate` wird als Ende der Rückmeldefrist für Zeitstempel, Countdown und Friststatus verwendet.
+- Event-Endzeiten und geplante Event-Endzeiten werden nicht mehr fälschlich als Rückmeldefrist verwendet.
+
+### Changed
+- Version in `manifest.json` auf `0.3.9` angehoben.
+
 ## [0.3.8] - 2026-07-03
 
 ### Fixed

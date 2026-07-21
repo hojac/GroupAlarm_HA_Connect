@@ -34,8 +34,8 @@ def _get_path(data: dict[str, Any] | None, *keys: str) -> Any:
 
 
 def _alarm_closed_at(alarm: dict[str, Any] | None) -> datetime | None:
-    """Return the real alarm/event close timestamp, not the feedback deadline."""
-    return _parse_datetime(_get_path(alarm, "endDate")) or _parse_datetime(_get_path(alarm, "event", "endDate"))
+    """Return the event close timestamp, excluding the feedback deadline."""
+    return _parse_datetime(_get_path(alarm, "event", "endDate"))
 
 
 def _alarm_id(alarm: dict[str, Any] | None) -> int | None:
@@ -64,8 +64,6 @@ class GroupAlarmCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self.organization_id = organization_id
         self.organization_name = organization_name
         self.user: dict[str, Any] | None = None
-        self._confirmed_feedback_alarm_id: int | None = None
-        self._confirmed_feedback_state: str | None = None
 
     @property
     def alarm(self) -> dict[str, Any] | None:
@@ -76,19 +74,6 @@ class GroupAlarmCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         if self.user:
             return self.user.get("id")
         return None
-
-    @property
-    def confirmed_feedback_state(self) -> str | None:
-        if not self.alarm or self._confirmed_feedback_alarm_id is None:
-            return None
-        try:
-            alarm_id = int(self.alarm.get("id"))
-        except (TypeError, ValueError):
-            return None
-        if alarm_id == self._confirmed_feedback_alarm_id:
-            return self._confirmed_feedback_state
-        return None
-
 
     @property
     def is_alert_active(self) -> bool:
@@ -132,9 +117,6 @@ class GroupAlarmCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                     full_alarm = await self.api.get_alarm(alarm_id, update_for_user=True)
                     if full_alarm is not None:
                         alarm = {**alarm, **full_alarm}
-                if self._confirmed_feedback_alarm_id is not None and alarm_id != self._confirmed_feedback_alarm_id:
-                    self._confirmed_feedback_alarm_id = None
-                    self._confirmed_feedback_state = None
             return {"alarm": alarm, "user": self.user}
         except GroupAlarmApiError as exc:
             raise UpdateFailed(str(exc)) from exc
@@ -146,7 +128,9 @@ class GroupAlarmCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             raise GroupAlarmApiError("Alarmierung ist nicht aktiv; Rückmeldung nicht möglich")
         alarm_id = int(self.alarm["id"])
 
-        # The UI state must only change after GroupAlarm accepted the feedback.
+        # Sending and displaying feedback are deliberately separate. A successful
+        # POST only means that GroupAlarm accepted the request; it must never
+        # change the displayed personal feedback on its own.
         await self.api.set_feedback(
             alarm_id=alarm_id,
             organization_id=self.organization_id,
@@ -154,20 +138,13 @@ class GroupAlarmCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             response=response,
         )
 
-        # POST was accepted by the server. Keep this confirmed state for the
-        # current alarm, because the alarm list endpoint does not always expose
-        # the current user's individual feedback immediately.
-        self._confirmed_feedback_alarm_id = alarm_id
-        self._confirmed_feedback_state = "komme" if response else "komme_nicht"
-
-        # Prefer the full alarm payload after feedback. It may contain richer
-        # feedback/selfFeedback data than the paginated alarm list endpoint.
+        # Only a subsequent full GET response may update the button color.
         try:
             full_alarm = await self.api.get_alarm(alarm_id, update_for_user=True)
         except GroupAlarmApiError:
             full_alarm = None
 
-        if full_alarm is not None:
+        if full_alarm is not None and _alarm_id(full_alarm) == alarm_id:
             self.async_set_updated_data({"alarm": full_alarm, "user": self.user})
         else:
             await self.async_request_refresh()

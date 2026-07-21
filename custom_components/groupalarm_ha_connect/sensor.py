@@ -13,6 +13,7 @@ from homeassistant.util import dt as dt_util
 
 from .const import DOMAIN
 from .coordinator import GroupAlarmCoordinator
+from .feedback import confirmed_feedback_state
 
 
 def _get_path(data: dict[str, Any] | None, *keys: str, default: Any = None) -> Any:
@@ -40,27 +41,6 @@ def _parse_datetime(value: Any) -> datetime | None:
     return None
 
 
-def _response_to_state(response: Any) -> str | None:
-    """Convert GroupAlarm feedback variants to the public sensor state."""
-    if isinstance(response, dict):
-        for key in ("response", "feedback", "value", "positive", "feedbackState", "answer"):
-            if key in response:
-                return _response_to_state(response[key])
-    if response is True:
-        return "komme"
-    if response is False:
-        return "komme_nicht"
-    if isinstance(response, str):
-        normalized = response.strip().lower()
-        if normalized in ("true", "positive", "positiv", "komme", "yes", "ja", "accepted", "coming"):
-            return "komme"
-        if normalized in ("false", "negative", "negativ", "komme_nicht", "komme nicht", "nein", "no", "declined", "not_coming"):
-            return "komme_nicht"
-        if normalized in ("unknown", "none", "null", "open", "offen", "pending", "no_feedback"):
-            return None
-    return None
-
-
 def _feedback_item_user_id(item: dict[str, Any]) -> Any:
     user = item.get("user")
     if isinstance(user, dict):
@@ -72,7 +52,7 @@ def _feedback_value(coordinator: GroupAlarmCoordinator) -> str:
     alarm = coordinator.alarm
     uid = coordinator.user_id
     if not alarm:
-        return "offen"
+        return "unbekannt"
 
     # First try to find the current user in the alarm feedback list. Aggregated
     # counters or feedback from other users must never color the local buttons.
@@ -86,30 +66,16 @@ def _feedback_value(coordinator: GroupAlarmCoordinator) -> str:
             except (TypeError, ValueError):
                 matches_user = False
             if matches_user:
-                for key in ("response", "feedback", "value", "positive", "feedbackState", "answer"):
-                    if key in item:
-                        state = _response_to_state(item.get(key))
-                        if state:
-                            return state
-                # A user-matching item without a usable answer still means no
-                # confirmed personal feedback is known yet. Keep the UI neutral.
-                return "offen"
+                return confirmed_feedback_state(item) or "unbekannt"
 
     # Some full endpoints expose an explicit personal-feedback object. Only use
     # it when it is not a bare boolean/aggregate fallback.
     for key in ("selfFeedback", "ownFeedback", "myFeedback"):
         if isinstance(alarm.get(key), dict):
-            state = _response_to_state(alarm.get(key))
+            state = confirmed_feedback_state(alarm[key])
             if state:
                 return state
-
-    # If GroupAlarm acknowledged our POST but the list endpoint does not expose
-    # per-user feedback, keep the confirmed server response for this alarm.
-    confirmed = coordinator.confirmed_feedback_state
-    if confirmed:
-        return confirmed
-
-    return "offen"
+    return "unbekannt"
 
 
 def _first_datetime(*values: Any) -> datetime | None:
@@ -136,12 +102,10 @@ def _alarm_end(coordinator: GroupAlarmCoordinator) -> datetime | None:
     """
     alarm = coordinator.alarm
     return _first_datetime(
+        _get_path(alarm, "endDate"),
         _get_path(alarm, "feedbackDeadline"),
         _get_path(alarm, "feedbackEndDate"),
         _get_path(alarm, "answerDeadline"),
-        _get_path(alarm, "event", "scheduledEndtime"),
-        _get_path(alarm, "scheduledEndTime"),
-        _get_path(alarm, "scheduledEndtime"),
     )
 
 

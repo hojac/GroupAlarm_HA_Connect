@@ -293,7 +293,7 @@ This release includes custom `icon.png` and `logo.png` assets for use by Home As
 Aktuelle Version:
 
 ```text
-0.3.8
+0.3.9
 ```
 
 Die Integration befindet sich in aktiver Entwicklung.
@@ -345,13 +345,20 @@ Dieses Projekt ist ein unabhängiges Open-Source-Projekt und steht in keiner off
 
 ## Aktuelle Version
 
-Aktuelle Version: `0.3.8`
+Aktuelle Version: `0.3.9`
 
 
 ## Branding
 
 This release includes `icon.png` and `logo.png` for HACS and Home Assistant display.
 
+
+## Version 0.3.9
+
+- Persönliche Rückmeldungen werden nur bei API-Status `RESPONDED` als `komme` oder `komme_nicht` angezeigt.
+- `UNAVAILABLE`, `TIMEDOUT` und fehlende Rückmeldungen bleiben neutral als `unbekannt`.
+- Buttonfarben werden ausschließlich aus der von GroupAlarm zurückgelesenen Alarmantwort ermittelt, nicht aus dem Sendevorgang.
+- `alarm.endDate` steuert die Anzeige von Rückmeldefrist, Countdown und Friststatus.
 
 ## Version 0.3.8
 
