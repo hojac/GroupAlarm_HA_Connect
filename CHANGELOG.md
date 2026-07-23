@@ -1,3 +1,19 @@
+## [0.3.10] - 2026-07-24
+
+### Added
+- Optionale Standard-Anfahrtszeit je Organisationseinheit.
+- Auswahl eines vorhandenen aktiven GroupAlarm-Geräts, sobald mindestens eine Anfahrtszeit konfiguriert ist.
+- Positive Rückmeldungen mit Zeit werden über `/app/feedback` und `answerData.duration` gesendet.
+- Automatischer Fallback über `/messaging/feedback`, falls die Zeitübermittlung fehlschlägt; Home Assistant informiert über die ausgelassene Zeit.
+
+### Fixed
+- Das Integrationssymbol wird aus dem von Home Assistant erwarteten lokalen `brand`-Ordner geladen.
+- Der Countdown aktualisiert sich nur noch sekündlich, solange eine bekannte Rückmeldefrist tatsächlich läuft.
+- Der veraltete `TrackerEntity`-Import wurde auf den aktuellen Home-Assistant-Pfad umgestellt.
+
+### Changed
+- Version in `manifest.json` auf `0.3.10` angehoben.
+
 ## [0.3.9] - 2026-07-21
 
 ### Fixed

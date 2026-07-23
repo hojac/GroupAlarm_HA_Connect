@@ -4,11 +4,13 @@ from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from homeassistant.core import HomeAssistant
+from homeassistant.components import persistent_notification
 from homeassistant.util import dt as dt_util
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .api import GroupAlarmApiClient, GroupAlarmApiError
 from .const import DOMAIN
+from .feedback_delivery import DurationFeedbackError, send_feedback
 
 
 def _parse_datetime(value: Any) -> datetime | None:
@@ -53,6 +55,8 @@ class GroupAlarmCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         organization_id: int,
         organization_name: str,
         scan_interval: int,
+        arrival_duration: int | None = None,
+        feedback_device_id: int | None = None,
     ) -> None:
         super().__init__(
             hass,
@@ -64,6 +68,8 @@ class GroupAlarmCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self.organization_id = organization_id
         self.organization_name = organization_name
         self.user: dict[str, Any] | None = None
+        self.arrival_duration = int(arrival_duration) if arrival_duration else None
+        self.feedback_device_id = int(feedback_device_id) if feedback_device_id else None
 
     @property
     def alarm(self) -> dict[str, Any] | None:
@@ -131,12 +137,43 @@ class GroupAlarmCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         # Sending and displaying feedback are deliberately separate. A successful
         # POST only means that GroupAlarm accepted the request; it must never
         # change the displayed personal feedback on its own.
-        await self.api.set_feedback(
-            alarm_id=alarm_id,
-            organization_id=self.organization_id,
-            user_id=int(self.user_id),
+        async def send_regular(regular_response: bool) -> object:
+            return await self.api.set_feedback(
+                alarm_id=alarm_id,
+                organization_id=self.organization_id,
+                user_id=int(self.user_id),
+                response=regular_response,
+            )
+
+        async def send_with_duration(device_id: int, duration: int) -> object:
+            try:
+                return await self.api.set_feedback_with_duration(
+                    alarm_id=alarm_id,
+                    device_id=device_id,
+                    response=True,
+                    duration=duration,
+                )
+            except GroupAlarmApiError as exc:
+                raise DurationFeedbackError from exc
+
+        fallback_used = await send_feedback(
             response=response,
+            duration=self.arrival_duration,
+            device_id=self.feedback_device_id,
+            send_regular=send_regular,
+            send_with_duration=send_with_duration,
         )
+
+        if fallback_used:
+            persistent_notification.async_create(
+                self.hass,
+                (
+                    "Die Rückmeldung wurde ohne Anfahrtszeit gesendet. "
+                    "Bitte prüfe das ausgewählte GroupAlarm-Gerät in den Integrationsoptionen."
+                ),
+                title="GroupAlarm: Anfahrtszeit nicht übertragen",
+                notification_id=f"{DOMAIN}_duration_fallback",
+            )
 
         # Only a subsequent full GET response may update the button color.
         try:

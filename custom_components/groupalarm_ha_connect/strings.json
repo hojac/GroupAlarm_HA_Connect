@@ -15,12 +15,28 @@
         "data": {
           "organization_ids": "Organisationen"
         }
+      },
+      "arrival_times": {
+        "title": "Standard-Anfahrtszeiten",
+        "description": "Optional: Trage die Standard-Anfahrtszeit für {organization} ein. Ein leeres Feld verwendet Rückmeldungen ohne Zeit.",
+        "data": {
+          "arrival_duration": "Standard-Anfahrtszeit"
+        }
+      },
+      "feedback_device": {
+        "title": "GroupAlarm-Gerät auswählen",
+        "description": "Für Rückmeldungen mit Anfahrtszeit ist ein vorhandenes aktives GroupAlarm-Gerät erforderlich. Gespeichert wird nur dessen Geräte-ID.",
+        "data": {
+          "feedback_device_id": "GroupAlarm-Gerät"
+        }
       }
     },
     "error": {
       "cannot_connect": "Verbindung zu GroupAlarm fehlgeschlagen. Prüfe den Token.",
       "no_organizations": "Es wurden keine Organisationen für diesen Token gefunden.",
-      "no_organizations_selected": "Wähle mindestens eine Organisation aus."
+      "no_organizations_selected": "Wähle mindestens eine Organisation aus.",
+      "cannot_load_devices": "Die GroupAlarm-Geräte konnten nicht geladen werden.",
+      "no_active_devices": "Es wurde kein aktives GroupAlarm-Gerät gefunden."
     },
     "abort": {
       "already_configured": "Dieser GroupAlarm-Zugang ist bereits eingerichtet."
@@ -35,11 +51,27 @@
           "organization_ids": "Organisationen",
           "scan_interval": "Aktualisierungsintervall in Sekunden"
         }
+      },
+      "arrival_times": {
+        "title": "Standard-Anfahrtszeiten",
+        "description": "Optional: Trage die Standard-Anfahrtszeit für {organization} ein. Ein leeres Feld deaktiviert die Zeitübermittlung.",
+        "data": {
+          "arrival_duration": "Standard-Anfahrtszeit"
+        }
+      },
+      "feedback_device": {
+        "title": "GroupAlarm-Gerät auswählen",
+        "description": "Wähle das aktive GroupAlarm-Gerät für Rückmeldungen mit Anfahrtszeit.",
+        "data": {
+          "feedback_device_id": "GroupAlarm-Gerät"
+        }
       }
     },
     "error": {
       "cannot_connect": "Organisationen konnten nicht geladen werden. Prüfe den Token.",
-      "no_organizations_selected": "Wähle mindestens eine Organisation aus."
+      "no_organizations_selected": "Wähle mindestens eine Organisation aus.",
+      "cannot_load_devices": "Die GroupAlarm-Geräte konnten nicht geladen werden.",
+      "no_active_devices": "Es wurde kein aktives GroupAlarm-Gerät gefunden."
     }
   }
 }

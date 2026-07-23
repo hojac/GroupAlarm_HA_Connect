@@ -6,6 +6,7 @@ from typing import Any
 import aiohttp
 
 from .const import BASE_URL
+from .feedback_delivery import active_device_summaries
 
 
 class GroupAlarmApiError(Exception):
@@ -57,6 +58,11 @@ class GroupAlarmApiClient:
                     return value
         return []
 
+    async def get_devices(self, owner_id: int) -> list[dict[str, Any]]:
+        """Return active GroupAlarm app devices without retaining push tokens."""
+        data = await self._request("GET", f"/app/device?owner_id={owner_id}")
+        return active_device_summaries(data)
+
     async def get_latest_alarm(self, organization_id: int) -> dict[str, Any] | None:
         data = await self._request("GET", f"/alarms?limit=1&organization={organization_id}")
         alarms = data.get("alarms", []) if isinstance(data, dict) else []
@@ -77,6 +83,22 @@ class GroupAlarmApiClient:
                 "organizationID": organization_id,
                 "response": response,
                 "userID": user_id,
+            },
+        )
+        return bool(data.get("success", True)) if isinstance(data, dict) else True
+
+    async def set_feedback_with_duration(
+        self, alarm_id: int, device_id: int, response: bool, duration: int
+    ) -> bool:
+        """Send feedback with an arrival duration through the app endpoint."""
+        data = await self._request(
+            "POST",
+            "/app/feedback",
+            json={
+                "alarmID": alarm_id,
+                "deviceID": device_id,
+                "response": response,
+                "answerData": {"duration": duration},
             },
         )
         return bool(data.get("success", True)) if isinstance(data, dict) else True

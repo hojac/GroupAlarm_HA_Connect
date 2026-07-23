@@ -27,6 +27,7 @@ Inoffizielle Home-Assistant-Integration für [GroupAlarm](https://www.groupalarm
 - mehrere parallele Instanzen mit unterschiedlichen Organisationsauswahlen
 - Alarmstatus, Alarmtext, Einsatznummer, Alarmzeit und Einsatzort
 - Rückmeldungen `Komme` und `Komme nicht` aus Home Assistant
+- optionale Standard-Anfahrtszeit je Organisationseinheit
 - serverbestätigter persönlicher Rückmeldestatus
 - Statistik positiver, negativer und offener Rückmeldungen
 - Ende und Countdown der Rückmeldefrist
@@ -80,6 +81,8 @@ Die resultierende Struktur muss so aussehen:
 5. Eine oder mehrere Organisationseinheiten auswählen.
 
 Die Organisationsauswahl und das Abfrageintervall können später über **Konfigurieren** geändert werden.
+
+Im Optionsdialog kann außerdem je Organisationseinheit eine optionale Standard-Anfahrtszeit von 1 bis 180 Minuten hinterlegt werden. Sobald mindestens eine Zeit gesetzt ist, muss ein vorhandenes aktives GroupAlarm-Gerät ausgewählt werden. Die Integration speichert nur dessen Geräte-ID, niemals den Push-Token.
 
 Mehrere Instanzen mit demselben GroupAlarm-Benutzer sind möglich, sofern unterschiedliche Organisationsauswahlen verwendet werden. Das ist beispielsweise nützlich, wenn Organisationseinheiten auf getrennten Dashboards erscheinen sollen.
 
@@ -137,6 +140,8 @@ Home Assistant kann die konkreten Entity-IDs bei Namenskonflikten abweichend ver
 ## Rückmeldungen und Rückmeldefrist
 
 Die Integration sendet persönliche Rückmeldungen an die GroupAlarm API. Eine Rückmeldung wird in Home Assistant erst als `komme` oder `komme_nicht` angezeigt, nachdem GroupAlarm sie bestätigt und die Integration den aktualisierten Alarmdatensatz abgerufen hat. Bis dahin bleiben beide Dashboard-Buttons neutral.
+
+Eine positive Rückmeldung mit konfigurierter Standard-Anfahrtszeit wird über den GroupAlarm-App-Endpunkt gesendet. Schlägt dabei nur die Zeitübermittlung fehl, sendet die Integration automatisch dieselbe Rückmeldung ohne Zeit über den bisherigen Endpunkt und zeigt einen Hinweis in Home Assistant. Eine negative Rückmeldung enthält grundsätzlich keine Anfahrtszeit.
 
 Unbeantwortete, nicht verfügbare oder abgelaufene Rückmeldungen werden als `unbekannt` behandelt. Der persönliche Status ist stets an die aktuelle Alarm-ID gebunden und wird nicht auf eine neue Alarmierung übertragen.
 
