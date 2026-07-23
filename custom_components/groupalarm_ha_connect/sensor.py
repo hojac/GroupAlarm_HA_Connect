@@ -196,17 +196,40 @@ class GroupAlarmSensor(CoordinatorEntity[GroupAlarmCoordinator], SensorEntity):
 
     async def async_added_to_hass(self) -> None:
         await super().async_added_to_hass()
-        if self.entity_description.key in ("countdown", "deadline_status"):
+        self._update_countdown_timer()
+
+    def _update_countdown_timer(self) -> None:
+        """Run the one-second timer only while a known deadline is active."""
+        needs_timer = (
+            self.entity_description.key in ("countdown", "deadline_status")
+            and (_remaining_seconds(_alarm_end(self.coordinator)) or 0) > 0
+        )
+        if needs_timer and self._unsub_countdown is None:
             self._unsub_countdown = async_track_time_interval(
                 self.hass,
                 self._async_countdown_tick,
                 timedelta(seconds=1),
             )
-            self.async_on_remove(self._unsub_countdown)
+        elif not needs_timer and self._unsub_countdown is not None:
+            self._unsub_countdown()
+            self._unsub_countdown = None
+
+    async def async_will_remove_from_hass(self) -> None:
+        if self._unsub_countdown is not None:
+            self._unsub_countdown()
+            self._unsub_countdown = None
+        await super().async_will_remove_from_hass()
 
     @callback
     def _async_countdown_tick(self, now: datetime) -> None:
+        if (_remaining_seconds(_alarm_end(self.coordinator)) or 0) <= 0:
+            self._update_countdown_timer()
         self.async_write_ha_state()
+
+    @callback
+    def _handle_coordinator_update(self) -> None:
+        self._update_countdown_timer()
+        super()._handle_coordinator_update()
 
     @property
     def native_value(self) -> Any:
