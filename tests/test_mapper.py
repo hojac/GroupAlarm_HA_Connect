@@ -11,6 +11,10 @@ from custom_components.groupalarm_ha_connect.api import (
     GroupAlarmResponseError,
 )
 from custom_components.groupalarm_ha_connect.mapper import (
+    _feedback_counts,
+    _optional_bool,
+    _optional_non_negative_int,
+    _optional_positive_int,
     normalize_alarm,
     select_alarm_reference,
     validate_coordinates,
@@ -354,3 +358,153 @@ def test_coordinate_validation(
     else:
         assert location is not None
         assert (location.latitude, location.longitude) == expected
+
+
+def test_optional_mapper_scalars_preserve_missing_values() -> None:
+    """Absent optional wire values stay absent and invalid booleans fail."""
+    assert _optional_positive_int(None, "value") is None
+    assert _optional_non_negative_int(None, "value") is None
+    assert _optional_bool(None, "value") is None
+    assert _feedback_counts(None, "counts").positive is None
+    with pytest.raises(GroupAlarmResponseError, match="value"):
+        _optional_bool("false", "value")
+
+
+@pytest.mark.parametrize(
+    "payload_update",
+    [
+        {"startDate": None},
+        {"startDate": "not-a-date"},
+        {"event": {"id": 70, "organizationID": 8}},
+        {
+            "event": {
+                "id": 70,
+                "organizationID": 7,
+                "abort": "invalid",
+            }
+        },
+    ],
+)
+def test_additional_list_candidate_boundaries(
+    payload_update: dict[str, object],
+) -> None:
+    """Malformed time and nested event fields fail the small polling gate."""
+    payload = _list_alarm(11, "2026-07-27T10:00:00Z")
+    payload.update(payload_update)
+    with pytest.raises(GroupAlarmResponseError):
+        select_alarm_reference(
+            GroupAlarmAlarmPage(alarms=(payload,), total_alarms=1),
+            7,
+        )
+
+
+def test_list_reference_accepts_documented_abort_shape() -> None:
+    """An abort object contributes only its proven revision timestamp."""
+    payload = _list_alarm(11, "2026-07-27T10:00:00Z")
+    payload["event"] = {
+        "id": 70,
+        "organizationID": 7,
+        "abort": {"time": "2026-07-27T10:01:00Z"},
+    }
+    reference = select_alarm_reference(
+        GroupAlarmAlarmPage(alarms=(payload,), total_alarms=1),
+        7,
+    )
+    assert reference is not None
+    assert reference.revision.event_abort_present is True
+    assert reference.revision.event_abort_at == datetime(
+        2026,
+        7,
+        27,
+        10,
+        1,
+        tzinfo=UTC,
+    )
+
+
+def test_invalid_list_scope_is_rejected_before_mapping() -> None:
+    """An invalid organization identity never enters selection."""
+    with pytest.raises(ValueError, match="organization_id"):
+        select_alarm_reference(
+            GroupAlarmAlarmPage(alarms=(), total_alarms=0),
+            0,
+        )
+
+
+@pytest.mark.parametrize("feedback", [None, {}, ["invalid"]])
+def test_personal_feedback_container_boundaries(feedback: object) -> None:
+    """Only a list of object records can confirm personal feedback."""
+    payload = _detail()
+    payload["feedback"] = feedback
+    if feedback == ["invalid"]:
+        alarm = normalize_alarm(
+            payload,
+            alarm_id=11,
+            organization_id=7,
+            user_id=41,
+        )
+        assert alarm.personal_feedback is PersonalFeedback.UNKNOWN
+    else:
+        with pytest.raises(GroupAlarmResponseError, match="feedback"):
+            normalize_alarm(
+                payload,
+                alarm_id=11,
+                organization_id=7,
+                user_id=41,
+            )
+
+
+@pytest.mark.parametrize(
+    ("argument_updates", "payload_updates"),
+    [
+        ({"alarm_id": 0}, {}),
+        ({}, {"id": 12}),
+        ({}, {"organizationID": 8}),
+        ({}, {"message": None}),
+        ({}, {"event": {"name": "E", "organizationID": 8}}),
+        ({}, {"event": {"name": None, "organizationID": 7}}),
+        (
+            {},
+            {
+                "event": {
+                    "name": "E",
+                    "organizationID": 7,
+                    "abort": "invalid",
+                }
+            },
+        ),
+    ],
+)
+def test_alarm_detail_identity_and_shape_boundaries(
+    argument_updates: dict[str, int],
+    payload_updates: dict[str, object],
+) -> None:
+    """Canonical details reject mismatched identities and malformed fields."""
+    arguments = {"alarm_id": 11, "organization_id": 7, "user_id": 41}
+    arguments.update(argument_updates)
+    payload = _detail()
+    payload.update(payload_updates)
+    with pytest.raises((ValueError, GroupAlarmResponseError)):
+        normalize_alarm(payload, **arguments)
+
+
+def test_blank_event_name_is_normalized_to_missing() -> None:
+    """Whitespace-only optional labels do not become visible content."""
+    payload = _detail()
+    event = dict(payload["event"])  # type: ignore[arg-type]
+    event["name"] = "  "
+    payload["event"] = event
+    assert (
+        normalize_alarm(
+            payload,
+            alarm_id=11,
+            organization_id=7,
+            user_id=41,
+        ).event_name
+        is None
+    )
+
+
+def test_coordinate_parser_rejects_non_numeric_strings() -> None:
+    """Text that has no finite numeric representation is not a location."""
+    assert validate_coordinates("north", "east") is None

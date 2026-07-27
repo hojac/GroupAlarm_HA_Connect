@@ -1,34 +1,44 @@
-# GroupAlarm HA Connect - Wall Display Card Template
+# GroupAlarm HA Connect 0.5.0 - Wall Display
 #
-# Usage:
-# 1. Copy this YAML block into a Lovelace dashboard.
-# 2. Replace every occurrence of __GA_PREFIX__ with your entity prefix, for example:
-#    groupalarm_ha_connect_lgw_lg_luchem
+# Optional dependency: custom:button-card
 #
-# Required custom card:
-# - custom:button-card
+# Replace every example entity ID below with the IDs from your installation.
+# Entity IDs are installation-specific and are intentionally not derived from
+# internal GroupAlarm IDs in this template.
+#
+# The current evidence-backed mapper has no proven deadline, activity, feedback
+# eligibility, or location path. The template therefore displays those states
+# neutrally and relies on the actual button entities' availability.
 
 type: vertical-stack
 cards:
   - type: custom:button-card
-    entity: binary_sensor.__GA_PREFIX___aktive_alarmierung
+    entity: binary_sensor.groupalarm_ha_connect_beispiel_aktive_alarmierung
     show_icon: false
     show_name: false
     show_label: false
     custom_fields:
       alarmzeit: |
         [[[
-          const zeit = states['sensor.__GA_PREFIX___alarmzeitpunkt']?.state || '—';
-          return '<span style="opacity:0.8;">Alarmzeit:</span> <b>' + zeit + '</b>';
+          const value =
+            states['sensor.groupalarm_ha_connect_beispiel_alarmzeitpunkt']?.state;
+          return `<span style="opacity:.75">Alarmzeit:</span> <b>${
+            value && !['unknown', 'unavailable'].includes(value) ? value : 'Unbekannt'
+          }</b>`;
         ]]]
       nummer: |
         [[[
-          const nr = states['sensor.__GA_PREFIX___einsatznummer']?.state || 'Kein Alarm';
-          return '<span style="opacity:0.8;">E-NR:</span> <b>' + nr + '</b>';
+          const value =
+            states['sensor.groupalarm_ha_connect_beispiel_einsatznummer']?.state;
+          return `<span style="opacity:.75">Einsatz:</span> <b>${
+            value && !['unknown', 'unavailable'].includes(value) ? value : 'Kein Alarm'
+          }</b>`;
         ]]]
       text: |
         [[[
-          return states['sensor.__GA_PREFIX___einsatzmeldung']?.state || '';
+          const value =
+            states['sensor.groupalarm_ha_connect_beispiel_einsatzmeldung']?.state;
+          return value && !['unknown', 'unavailable'].includes(value) ? value : '—';
         ]]]
     state:
       - value: "on"
@@ -42,6 +52,14 @@ cards:
               - color: white
             text:
               - color: white
+      - value: "unknown"
+        styles:
+          card:
+            - border: 2px solid var(--warning-color)
+      - value: "unavailable"
+        styles:
+          card:
+            - opacity: 0.55
     styles:
       grid:
         - grid-template-areas: |
@@ -51,13 +69,12 @@ cards:
         - grid-template-columns: 1fr
         - grid-template-rows: min-content min-content 1fr
       card:
-        - min-height: 300px
+        - min-height: 260px
         - padding: 20px
         - border-radius: 15px
       custom_fields:
         alarmzeit:
           - justify-self: start
-          - align-self: start
           - font-size: 16px
           - margin-bottom: 8px
         nummer:
@@ -76,9 +93,9 @@ cards:
   - type: horizontal-stack
     cards:
       - type: custom:button-card
-        entity: sensor.__GA_PREFIX___ruckmeldungen_positive
+        entity: sensor.groupalarm_ha_connect_beispiel_ruckmeldungen_positiv
+        name: Positiv
         show_icon: false
-        show_name: false
         show_state: true
         styles:
           card:
@@ -89,9 +106,9 @@ cards:
             - font-size: 34px
             - font-weight: bold
       - type: custom:button-card
-        entity: sensor.__GA_PREFIX___ruckmeldungen_negative
+        entity: sensor.groupalarm_ha_connect_beispiel_ruckmeldungen_negativ
+        name: Negativ
         show_icon: false
-        show_name: false
         show_state: true
         styles:
           card:
@@ -102,106 +119,104 @@ cards:
             - font-size: 34px
             - font-weight: bold
       - type: custom:button-card
-        entity: sensor.__GA_PREFIX___ruckmeldungen_offen
+        entity: sensor.groupalarm_ha_connect_beispiel_ruckmeldungen_offen
+        name: Offen
         show_icon: false
-        show_name: false
         show_state: true
         styles:
           card:
             - height: 90px
             - border-radius: 15px
           state:
-            - color: white
             - font-size: 34px
             - font-weight: bold
 
-  - type: custom:button-card
-    entity: sensor.__GA_PREFIX___ruckmeldefrist_countdown
-    name: Rückmeldefrist
-    show_icon: true
-    icon: mdi:timer-outline
-    show_state: true
-    styles:
-      icon:
-        - width: 40px
-        - height: 40px
+  - type: markdown
+    title: Rückmeldefrist
+    content: >-
+      {% set feedback =
+        states('sensor.groupalarm_ha_connect_beispiel_meine_ruckmeldung') %}
+      {% if feedback in ['komme', 'komme_nicht'] %}
+      **Rückmeldung erhalten**
+      {% elif feedback == 'no_alarm' %}
+      Kein Alarm
+      {% else %}
+      **Unbekannt** – die persönliche Rückmeldefrist ist noch nicht
+      durch eine reale, anonymisierte API-Payload belegt.
+      {% endif %}
 
   - type: horizontal-stack
     cards:
       - type: custom:button-card
-        entity: sensor.__GA_PREFIX___meine_ruckmeldung
+        entity: button.groupalarm_ha_connect_beispiel_komme
         name: Komme
         icon: mdi:check-circle
         tap_action:
           action: call-service
           service: button.press
           target:
-            entity_id: button.__GA_PREFIX___komme
+            entity_id: button.groupalarm_ha_connect_beispiel_komme
         state:
-          - value: komme
+          - value: "unavailable"
             styles:
               card:
-                - background-color: "#2e7d32"
-              icon:
-                - color: white
-              name:
-                - color: white
+                - opacity: 0.45
         styles:
           card:
             - height: 120px
             - border-radius: 15px
+            - background-color: |
+                [[[
+                  return states[
+                    'sensor.groupalarm_ha_connect_beispiel_meine_ruckmeldung'
+                  ]?.state === 'komme'
+                    ? '#2e7d32'
+                    : 'var(--ha-card-background)';
+                ]]]
           icon:
             - width: 42px
           name:
             - font-size: 20px
             - font-weight: bold
+
       - type: custom:button-card
-        entity: sensor.__GA_PREFIX___meine_ruckmeldung
+        entity: button.groupalarm_ha_connect_beispiel_komme_nicht
         name: Komme nicht
         icon: mdi:close-circle
         tap_action:
           action: call-service
           service: button.press
           target:
-            entity_id: button.__GA_PREFIX___komme_nicht
+            entity_id: button.groupalarm_ha_connect_beispiel_komme_nicht
         state:
-          - value: komme_nicht
+          - value: "unavailable"
             styles:
               card:
-                - background-color: "#b71c1c"
-              icon:
-                - color: white
-              name:
-                - color: white
+                - opacity: 0.45
         styles:
           card:
             - height: 120px
             - border-radius: 15px
+            - background-color: |
+                [[[
+                  return states[
+                    'sensor.groupalarm_ha_connect_beispiel_meine_ruckmeldung'
+                  ]?.state === 'komme_nicht'
+                    ? '#b71c1c'
+                    : 'var(--ha-card-background)';
+                ]]]
           icon:
             - width: 42px
           name:
             - font-size: 20px
             - font-weight: bold
 
-  - type: custom:button-card
-    entity: sensor.__GA_PREFIX___einsatzort
-    show_icon: false
-    name: >
-      [[[ return states['sensor.__GA_PREFIX___einsatzort']?.state || 'Kein Einsatzort'; ]]]
-    styles:
-      card:
-        - padding: 18px
-        - border-radius: 15px
-      name:
-        - font-size: 22px
-        - white-space: normal
-        - text-align: center
-
   - type: map
+    title: Einsatzort
     show_all: false
     entities:
-      - entity: device_tracker.__GA_PREFIX___einsatzort
-        name: +
+      - entity: device_tracker.groupalarm_ha_connect_beispiel_einsatzort
+        name: Einsatzort
     hours_to_show: 1
     aspect_ratio: "1:1"
     default_zoom: 14

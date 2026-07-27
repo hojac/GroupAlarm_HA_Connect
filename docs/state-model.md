@@ -268,3 +268,19 @@ log raw payloads or repeat the same failure every poll.
 Phase 4 is intentionally independent. Missing deadline evidence does not block
 the foundation, reading, traffic optimization or feedback reconciliation, but
 it does block button enablement where eligibility cannot otherwise be proven.
+
+## Diagnostic projection
+
+Diagnostics are a separate projection of the normalized state. They retain
+only:
+
+- pseudonymized identities;
+- availability and error class;
+- alarm/location presence flags;
+- activity, eligibility, personal-feedback and deadline enums;
+- last successful coordinator update;
+- recognized field paths without values.
+
+They never reuse entity values for alarm message, organization name, address,
+coordinates or numeric IDs. Pseudonyms are stable inside one Config Entry but
+different across Config Entries, preventing a global cross-entry identifier.

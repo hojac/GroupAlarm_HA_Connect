@@ -61,6 +61,7 @@ select = [
 
 [tool.ruff.lint.per-file-ignores]
 "scripts/anonymize_fixture.py" = ["T201"]
+"scripts/check_repository.py" = ["T201"]
 "tests/test_anonymize_fixture.py" = ["PT009"]
 "tests/**/*.py" = ["S101"]
 

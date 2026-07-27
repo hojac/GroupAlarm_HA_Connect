@@ -21,11 +21,19 @@ from custom_components.groupalarm_ha_connect.api import (
     GroupAlarmAppDevice,
     GroupAlarmAuthenticationError,
     GroupAlarmOrganization,
+    GroupAlarmPermissionError,
+    GroupAlarmRequestError,
+    GroupAlarmResponseError,
     GroupAlarmTransportError,
     GroupAlarmUser,
 )
 from custom_components.groupalarm_ha_connect.config_flow import (
     CONF_ARRIVAL_DURATION,
+    _arrival_duration_schema,
+    _entry_organization_ids,
+    _entry_token,
+    _entry_uses_account,
+    _filtered_options,
 )
 from custom_components.groupalarm_ha_connect.const import (
     CONF_FEEDBACK_DEVICE_ID,
@@ -36,6 +44,8 @@ from custom_components.groupalarm_ha_connect.const import (
     CONF_USER_ID,
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
+    LEGACY_CONF_ORGANIZATION_ID,
+    LEGACY_CONF_PAT,
 )
 from custom_components.groupalarm_ha_connect.models import build_entry_unique_id
 
@@ -470,3 +480,544 @@ async def test_options_update_scope_interval_and_reload(
     }
     assert entry.unique_id == "user_41_organizations_12"
     schedule_reload.assert_called_once_with(entry.entry_id)
+
+
+def test_legacy_entry_helpers_and_filtered_options() -> None:
+    """Flow helpers safely support legacy identity and scoped options."""
+    legacy = MockConfigEntry(
+        domain=DOMAIN,
+        data={
+            LEGACY_CONF_PAT: "legacy-token",
+            LEGACY_CONF_ORGANIZATION_ID: "7",
+        },
+    )
+    assert _entry_token(legacy) == "legacy-token"
+    assert _entry_organization_ids(legacy) == {7}
+    assert _entry_uses_account(legacy, user_id=41, token="legacy-token")
+    assert not _entry_uses_account(legacy, user_id=41, token=None)
+
+    missing = MockConfigEntry(domain=DOMAIN, data={})
+    assert _entry_organization_ids(missing) == set()
+    assert not _entry_uses_account(missing, user_id=41, token="token")
+    with pytest.raises(ValueError, match="token"):
+        _entry_token(missing)
+
+    current = _entry()
+    assert _entry_uses_account(current, user_id=41, token=None)
+    assert not _entry_uses_account(current, user_id=99, token="old-token")
+
+    options = _filtered_options(
+        {
+            CONF_SCAN_INTERVAL: 75,
+            CONF_ORGANIZATION_DURATIONS: {"7": 12, "12": 20},
+            CONF_FEEDBACK_DEVICE_ID: 91,
+        },
+        {7},
+    )
+    assert options == {
+        CONF_SCAN_INTERVAL: 75,
+        CONF_ORGANIZATION_DURATIONS: {"7": 12},
+        CONF_FEEDBACK_DEVICE_ID: 91,
+    }
+    assert _arrival_duration_schema(12)({})[CONF_ARRIVAL_DURATION] == 12
+
+
+@pytest.mark.parametrize(
+    ("side_effect", "expected_error"),
+    [
+        (GroupAlarmPermissionError(403), "invalid_auth"),
+        (GroupAlarmRequestError(422), "invalid_auth"),
+        (GroupAlarmRequestError(400), "invalid_response"),
+        (GroupAlarmResponseError("invalid"), "invalid_response"),
+    ],
+)
+async def test_user_flow_maps_all_validation_failures(
+    hass: HomeAssistant,
+    mock_groupalarm: dict[str, AsyncMock],
+    side_effect: Exception,
+    expected_error: str,
+) -> None:
+    """Every account-validation class maps to a stable form error."""
+    mock_groupalarm["current_user"].side_effect = side_effect
+    result = await _start_user_flow(hass)
+    result = await _submit_account(hass, result["flow_id"])
+    assert result["errors"] == {"base": expected_error}
+
+
+@pytest.mark.parametrize(
+    ("selected", "expected_error"),
+    [
+        ([], "no_organizations_selected"),
+    ],
+)
+async def test_user_flow_rejects_invalid_scope_selection(
+    hass: HomeAssistant,
+    mock_groupalarm: dict[str, AsyncMock],
+    selected: list[str],
+    expected_error: str,
+) -> None:
+    """The selected scope must be nonempty and currently accessible."""
+    result = await _start_user_flow(hass)
+    result = await _submit_account(hass, result["flow_id"])
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"],
+        {CONF_ORGANIZATION_IDS: selected},
+    )
+    assert result["step_id"] == "organizations"
+    assert result["errors"] == {"base": expected_error}
+
+
+async def test_user_flow_defensively_rejects_unoffered_scope(
+    hass: HomeAssistant,
+    mock_groupalarm: dict[str, AsyncMock],
+) -> None:
+    """Internal validation rejects manipulated values beyond the UI selector."""
+    result = await _start_user_flow(hass)
+    result = await _submit_account(hass, result["flow_id"])
+    flow = hass.config_entries.flow._progress[result["flow_id"]]
+    result = await flow.async_step_organizations({CONF_ORGANIZATION_IDS: ["99"]})
+    assert result["errors"] == {"base": "invalid_organization"}
+
+
+async def _advance_user_to_feedback_device(
+    hass: HomeAssistant,
+) -> dict[str, object]:
+    result = await _start_user_flow(hass)
+    result = await _submit_account(hass, result["flow_id"])
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"],
+        {CONF_ORGANIZATION_IDS: ["7"]},
+    )
+    return await hass.config_entries.flow.async_configure(
+        result["flow_id"],
+        {CONF_ARRIVAL_DURATION: 12},
+    )
+
+
+@pytest.mark.parametrize(
+    ("side_effect", "expected_error"),
+    [
+        (GroupAlarmAuthenticationError(401), "invalid_auth"),
+        (GroupAlarmResponseError("invalid"), "invalid_response"),
+        (GroupAlarmTransportError("offline"), "cannot_load_devices"),
+    ],
+)
+async def test_user_device_step_maps_failures(
+    hass: HomeAssistant,
+    mock_groupalarm: dict[str, AsyncMock],
+    side_effect: Exception,
+    expected_error: str,
+) -> None:
+    """Timed feedback cannot proceed when device discovery is uncertain."""
+    mock_groupalarm["devices"].side_effect = side_effect
+    result = await _advance_user_to_feedback_device(hass)
+    assert result["step_id"] == "feedback_device"
+    assert result["errors"] == {"base": expected_error}
+
+
+async def test_user_device_step_rejects_unlisted_device(
+    hass: HomeAssistant,
+    mock_groupalarm: dict[str, AsyncMock],
+) -> None:
+    """A posted device identifier must still belong to the active device set."""
+    result = await _advance_user_to_feedback_device(hass)
+    flow = hass.config_entries.flow._progress[result["flow_id"]]
+    result = await flow.async_step_feedback_device(
+        {CONF_FEEDBACK_DEVICE_ID: "999"},
+    )
+    assert result["errors"] == {"base": "invalid_device"}
+
+
+async def test_reauth_preserves_validation_error(
+    hass: HomeAssistant,
+    mock_groupalarm: dict[str, AsyncMock],
+) -> None:
+    """Reauthentication displays API validation errors without changing data."""
+    mock_groupalarm["current_user"].side_effect = GroupAlarmResponseError("invalid")
+    entry = _entry()
+    entry.add_to_hass(hass)
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN,
+        context={
+            "source": SOURCE_REAUTH,
+            "entry_id": entry.entry_id,
+            "unique_id": entry.unique_id,
+        },
+        data=entry.data,
+    )
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"],
+        {CONF_TOKEN: "bad-token"},
+    )
+    assert result["errors"] == {"base": "invalid_response"}
+    assert entry.data[CONF_TOKEN] == "old-token"
+
+
+@pytest.mark.parametrize(
+    ("user_id", "error", "expected"),
+    [
+        (41, GroupAlarmTransportError("offline"), "cannot_connect"),
+        (99, None, "wrong_account"),
+    ],
+)
+async def test_reconfigure_rejects_invalid_account(
+    hass: HomeAssistant,
+    mock_groupalarm: dict[str, AsyncMock],
+    user_id: int,
+    error: Exception | None,
+    expected: str,
+) -> None:
+    """Reconfigure cannot change accounts or continue after connection failure."""
+    mock_groupalarm["current_user"].return_value = GroupAlarmUser(id=user_id)
+    mock_groupalarm["current_user"].side_effect = error
+    entry = _entry()
+    entry.add_to_hass(hass)
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN,
+        context={
+            "source": SOURCE_RECONFIGURE,
+            "entry_id": entry.entry_id,
+            "unique_id": entry.unique_id,
+        },
+    )
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"],
+        {CONF_TOKEN: "replacement"},
+    )
+    assert result["step_id"] == "reconfigure"
+    assert result["errors"] == {"base": expected}
+
+
+@pytest.mark.parametrize(
+    ("selected", "expected"),
+    [
+        ([], "no_organizations_selected"),
+    ],
+)
+async def test_reconfigure_rejects_invalid_scope(
+    hass: HomeAssistant,
+    mock_groupalarm: dict[str, AsyncMock],
+    selected: list[str],
+    expected: str,
+) -> None:
+    """Reconfigure applies the same explicit scope validation as setup."""
+    entry = _entry()
+    entry.add_to_hass(hass)
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN,
+        context={
+            "source": SOURCE_RECONFIGURE,
+            "entry_id": entry.entry_id,
+            "unique_id": entry.unique_id,
+        },
+    )
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"],
+        {CONF_TOKEN: "replacement"},
+    )
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"],
+        {CONF_ORGANIZATION_IDS: selected},
+    )
+    assert result["errors"] == {"base": expected}
+
+
+async def test_reconfigure_defensively_rejects_unoffered_scope(
+    hass: HomeAssistant,
+    mock_groupalarm: dict[str, AsyncMock],
+) -> None:
+    """Reconfigure retains a server-side scope check behind its selector."""
+    entry = _entry()
+    entry.add_to_hass(hass)
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN,
+        context={
+            "source": SOURCE_RECONFIGURE,
+            "entry_id": entry.entry_id,
+            "unique_id": entry.unique_id,
+        },
+    )
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"],
+        {CONF_TOKEN: "replacement"},
+    )
+    flow = hass.config_entries.flow._progress[result["flow_id"]]
+    result = await flow.async_step_reconfigure_organizations(
+        {CONF_ORGANIZATION_IDS: ["99"]}
+    )
+    assert result["errors"] == {"base": "invalid_organization"}
+
+
+async def test_reconfigure_rejects_scope_owned_by_other_entry(
+    hass: HomeAssistant,
+    mock_groupalarm: dict[str, AsyncMock],
+) -> None:
+    """A second entry for the same account cannot own an overlapping scope."""
+    entry = _entry(organizations=[7])
+    entry.add_to_hass(hass)
+    other = _entry(organizations=[12])
+    other.add_to_hass(hass)
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN,
+        context={
+            "source": SOURCE_RECONFIGURE,
+            "entry_id": entry.entry_id,
+            "unique_id": entry.unique_id,
+        },
+    )
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"],
+        {CONF_TOKEN: "replacement"},
+    )
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"],
+        {CONF_ORGANIZATION_IDS: ["12"]},
+    )
+    assert result["errors"] == {"base": "organization_already_configured"}
+
+
+async def test_reconfigure_keeps_scoped_duration_and_device(
+    hass: HomeAssistant,
+    mock_groupalarm: dict[str, AsyncMock],
+) -> None:
+    """Reconfigure preserves timed-feedback options for retained organizations."""
+    entry = _entry(organizations=[7, 12])
+    entry.add_to_hass(hass)
+    hass.config_entries.async_update_entry(
+        entry,
+        options={
+            CONF_SCAN_INTERVAL: 75,
+            CONF_ORGANIZATION_DURATIONS: {"7": 12, "12": 20},
+            CONF_FEEDBACK_DEVICE_ID: 91,
+        },
+    )
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN,
+        context={
+            "source": SOURCE_RECONFIGURE,
+            "entry_id": entry.entry_id,
+            "unique_id": entry.unique_id,
+        },
+    )
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"],
+        {CONF_TOKEN: "replacement"},
+    )
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"],
+        {CONF_ORGANIZATION_IDS: ["7"]},
+    )
+    assert result["type"] is FlowResultType.ABORT
+    assert entry.options == {
+        CONF_SCAN_INTERVAL: 75,
+        CONF_ORGANIZATION_DURATIONS: {"7": 12},
+        CONF_FEEDBACK_DEVICE_ID: 91,
+    }
+
+
+async def test_options_abort_without_token(
+    hass: HomeAssistant,
+) -> None:
+    """Options cannot load when neither current nor legacy token exists."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={
+            CONF_USER_ID: 41,
+            CONF_ORGANIZATION_IDS: [7],
+        },
+        options={CONF_SCAN_INTERVAL: 60},
+        version=3,
+    )
+    entry.add_to_hass(hass)
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "invalid_auth"
+
+
+@pytest.mark.parametrize(
+    ("side_effect", "expected"),
+    [
+        (GroupAlarmAuthenticationError(401), "invalid_auth"),
+        (GroupAlarmResponseError("invalid"), "invalid_response"),
+        (GroupAlarmTransportError("offline"), "cannot_connect"),
+    ],
+)
+async def test_options_maps_organization_loading_errors(
+    hass: HomeAssistant,
+    mock_groupalarm: dict[str, AsyncMock],
+    side_effect: Exception,
+    expected: str,
+) -> None:
+    """Options form reports why the current organization list is unavailable."""
+    mock_groupalarm["organizations"].side_effect = side_effect
+    entry = _entry()
+    entry.add_to_hass(hass)
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+    assert result["step_id"] == "init"
+    assert result["errors"] == {"base": expected}
+
+
+@pytest.mark.parametrize(
+    ("selected", "expected"),
+    [
+        ([], "no_organizations_selected"),
+    ],
+)
+async def test_options_rejects_invalid_scope(
+    hass: HomeAssistant,
+    mock_groupalarm: dict[str, AsyncMock],
+    selected: list[str],
+    expected: str,
+) -> None:
+    """Options requires a nonempty currently accessible organization set."""
+    entry = _entry()
+    entry.add_to_hass(hass)
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"],
+        {
+            CONF_ORGANIZATION_IDS: selected,
+            CONF_SCAN_INTERVAL: 60,
+        },
+    )
+    assert result["errors"] == {"base": expected}
+
+
+async def test_options_defensively_rejects_unoffered_scope(
+    hass: HomeAssistant,
+    mock_groupalarm: dict[str, AsyncMock],
+) -> None:
+    """Options retains an internal scope check behind schema validation."""
+    entry = _entry()
+    entry.add_to_hass(hass)
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+    flow = hass.config_entries.options._progress[result["flow_id"]]
+    result = await flow.async_step_init(
+        {
+            CONF_ORGANIZATION_IDS: ["99"],
+            CONF_SCAN_INTERVAL: 60,
+        }
+    )
+    assert result["errors"] == {"base": "invalid_organization"}
+
+
+async def test_options_rejects_scope_owned_by_other_entry(
+    hass: HomeAssistant,
+    mock_groupalarm: dict[str, AsyncMock],
+) -> None:
+    """Options cannot move an entry onto another entry's account scope."""
+    entry = _entry(organizations=[7])
+    entry.add_to_hass(hass)
+    _entry(organizations=[12]).add_to_hass(hass)
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"],
+        {
+            CONF_ORGANIZATION_IDS: ["12"],
+            CONF_SCAN_INTERVAL: 60,
+        },
+    )
+    assert result["errors"] == {"base": "organization_already_configured"}
+
+
+async def _advance_options_to_feedback_device(
+    hass: HomeAssistant,
+    entry: MockConfigEntry,
+) -> dict[str, object]:
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"],
+        {
+            CONF_ORGANIZATION_IDS: ["7", "12"],
+            CONF_SCAN_INTERVAL: 75,
+        },
+    )
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"],
+        {CONF_ARRIVAL_DURATION: 15},
+    )
+    assert result["description_placeholders"] == {"organization": "Bravo"}
+    return await hass.config_entries.options.async_configure(
+        result["flow_id"],
+        {CONF_ARRIVAL_DURATION: 20},
+    )
+
+
+async def test_options_updates_multiple_durations_and_device(
+    hass: HomeAssistant,
+    mock_groupalarm: dict[str, AsyncMock],
+) -> None:
+    """Options persists explicit durations and an active selected device."""
+    entry = _entry(organizations=[7, 12])
+    entry.add_to_hass(hass)
+    hass.config_entries.async_update_entry(
+        entry,
+        options={
+            CONF_SCAN_INTERVAL: 60,
+            CONF_ORGANIZATION_DURATIONS: {"7": 10},
+            CONF_FEEDBACK_DEVICE_ID: 91,
+        },
+    )
+    result = await _advance_options_to_feedback_device(hass, entry)
+    assert result["step_id"] == "feedback_device"
+    assert result["data_schema"]({})[CONF_FEEDBACK_DEVICE_ID] == "91"
+
+    flow = hass.config_entries.options._progress[result["flow_id"]]
+    result = await flow.async_step_feedback_device(
+        {CONF_FEEDBACK_DEVICE_ID: "999"},
+    )
+    assert result["errors"] == {"base": "invalid_device"}
+
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"],
+        {CONF_FEEDBACK_DEVICE_ID: "91"},
+    )
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert entry.options == {
+        CONF_SCAN_INTERVAL: 75,
+        CONF_ORGANIZATION_DURATIONS: {"7": 15, "12": 20},
+        CONF_FEEDBACK_DEVICE_ID: 91,
+    }
+
+
+@pytest.mark.parametrize(
+    ("side_effect", "expected"),
+    [
+        (GroupAlarmPermissionError(403), "invalid_auth"),
+        (GroupAlarmResponseError("invalid"), "invalid_response"),
+        (GroupAlarmTransportError("offline"), "cannot_load_devices"),
+    ],
+)
+async def test_options_device_step_maps_failures(
+    hass: HomeAssistant,
+    mock_groupalarm: dict[str, AsyncMock],
+    side_effect: Exception,
+    expected: str,
+) -> None:
+    """Options keeps timed feedback unsaved if device discovery is uncertain."""
+    entry = _entry(organizations=[7, 12])
+    entry.add_to_hass(hass)
+    mock_groupalarm["devices"].side_effect = side_effect
+    result = await _advance_options_to_feedback_device(hass, entry)
+    assert result["step_id"] == "feedback_device"
+    assert result["errors"] == {"base": expected}
+
+
+async def test_options_device_step_requires_active_device(
+    hass: HomeAssistant,
+    mock_groupalarm: dict[str, AsyncMock],
+) -> None:
+    """Inactive app installations cannot be selected for timed feedback."""
+    entry = _entry(organizations=[7, 12])
+    entry.add_to_hass(hass)
+    mock_groupalarm["devices"].return_value = (
+        GroupAlarmAppDevice(
+            id=91,
+            owner_id=41,
+            name="Old phone",
+            active=False,
+            is_main_device=False,
+        ),
+    )
+    result = await _advance_options_to_feedback_device(hass, entry)
+    assert result["errors"] == {"base": "no_active_devices"}

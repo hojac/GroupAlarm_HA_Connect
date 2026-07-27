@@ -216,5 +216,11 @@
         "name": "User ID"
       }
     }
+  },
+  "issues": {
+    "invalid_feedback_device": {
+      "title": "Invalid GroupAlarm device for arrival durations",
+      "description": "An arrival duration is configured for at least one organization, but no valid GroupAlarm device ID is stored. Open the integration options and select an active app device, or remove all arrival durations."
+    }
   }
 }

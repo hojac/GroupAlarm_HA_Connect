@@ -17,15 +17,19 @@ from custom_components.groupalarm_ha_connect.api import (
     GroupAlarmAlarmPage,
     GroupAlarmAuthenticationError,
     GroupAlarmClient,
+    GroupAlarmError,
     GroupAlarmPermissionError,
     GroupAlarmRateLimitError,
     GroupAlarmRequestError,
+    GroupAlarmResponseError,
+    GroupAlarmServerError,
     GroupAlarmTransportError,
     GroupAlarmUser,
 )
 from custom_components.groupalarm_ha_connect.button import (
     BUTTONS,
     GroupAlarmFeedbackButton,
+    _action_exception_key,
 )
 from custom_components.groupalarm_ha_connect.const import (
     CONF_FEEDBACK_DEVICE_ID,
@@ -38,12 +42,19 @@ from custom_components.groupalarm_ha_connect.const import (
 )
 from custom_components.groupalarm_ha_connect.coordinator import (
     GroupAlarmCoordinator,
+    _classify_error,
 )
 from custom_components.groupalarm_ha_connect.feedback import (
+    FeedbackActionError,
     FeedbackBusyError,
+    FeedbackConfigurationError,
+    FeedbackConflictError,
     FeedbackDeliveryResult,
+    FeedbackNotConfirmedError,
     FeedbackOutcomeUnknownError,
+    FeedbackPendingError,
     FeedbackSupersededError,
+    FeedbackUnavailableError,
 )
 from custom_components.groupalarm_ha_connect.models import (
     FeedbackEligibility,
@@ -683,3 +694,352 @@ async def test_button_notifies_about_confirmed_duration_fallback(
         title="GroupAlarm HA Connect",
         notification_id=f"{DOMAIN}_feedback_7",
     )
+
+
+@pytest.mark.parametrize(
+    ("error", "expected"),
+    [
+        (GroupAlarmPermissionError(403), OrganizationError.PERMISSION),
+        (GroupAlarmRateLimitError(30), OrganizationError.RATE_LIMIT),
+        (GroupAlarmRequestError(400), OrganizationError.REQUEST),
+        (
+            GroupAlarmResponseError("invalid"),
+            OrganizationError.RESPONSE,
+        ),
+        (GroupAlarmServerError(500), OrganizationError.SERVER),
+        (GroupAlarmTransportError("offline"), OrganizationError.TRANSPORT),
+    ],
+)
+def test_api_errors_are_classified_without_payloads(
+    error: GroupAlarmError,
+    expected: OrganizationError,
+) -> None:
+    """Every isolatable API error maps to one stable diagnostic value."""
+    assert _classify_error(error) is expected
+    with pytest.raises(TypeError, match="Unsupported"):
+        _classify_error(GroupAlarmError("unsupported"))
+
+
+def test_pending_and_feedback_configuration_boundaries(
+    hass: HomeAssistant,
+) -> None:
+    """Pending writes and malformed options fail before any POST."""
+    coordinator, _client = _coordinator(hass)
+    coordinator._pending_feedback = {(7, 10): True, (7, 11): False, (12, 1): True}
+    coordinator._clear_pending_feedback(7, keep_alarm_id=11)
+    assert coordinator._pending_feedback == {(7, 11): False, (12, 1): True}
+
+    invalid_durations, _ = _coordinator(
+        hass,
+        durations="invalid",  # type: ignore[arg-type]
+    )
+    with pytest.raises(FeedbackConfigurationError):
+        invalid_durations._arrival_duration(7)
+
+    invalid_duration, _ = _coordinator(
+        hass,
+        durations={"7": 181},
+    )
+    with pytest.raises(FeedbackConfigurationError):
+        invalid_duration._arrival_duration(7)
+
+    for device_id in (False, 0):
+        invalid_device, _ = _coordinator(
+            hass,
+            durations={"7": 12},
+            device_id=device_id,
+        )
+        with pytest.raises(FeedbackConfigurationError):
+            invalid_device._feedback_device_id()
+
+
+async def test_feedback_validation_handles_missing_and_pending_state(
+    hass: HomeAssistant,
+) -> None:
+    """Absent coordinator state and unresolved writes stay unavailable."""
+    coordinator, client = _coordinator(hass)
+    with pytest.raises(FeedbackUnavailableError):
+        coordinator._validated_feedback_alarm(7)
+
+    await _load_feedback_context(coordinator, client)
+    coordinator._pending_feedback[(7, 11)] = True
+    with pytest.raises(FeedbackPendingError):
+        coordinator._validated_feedback_alarm(7)
+
+
+async def test_reconciliation_detects_superseded_target_around_delay(
+    hass: HomeAssistant,
+) -> None:
+    """A replacement alarm cancels reconciliation before or after sleeping."""
+    coordinator, client = _coordinator(hass)
+    await _load_feedback_context(coordinator, client)
+
+    with (
+        patch.object(coordinator, "_target_is_current", return_value=False),
+        pytest.raises(FeedbackSupersededError),
+    ):
+        await coordinator._async_reconcile_feedback(
+            organization_id=7,
+            alarm_id=11,
+            response=True,
+            duration=None,
+        )
+
+    with (
+        patch(
+            "custom_components.groupalarm_ha_connect.coordinator."
+            "FEEDBACK_RECONCILIATION_DELAYS",
+            (1.0,),
+        ),
+        patch(
+            "custom_components.groupalarm_ha_connect.coordinator.asyncio.sleep",
+            new=AsyncMock(),
+        ),
+        patch.object(
+            coordinator,
+            "_target_is_current",
+            side_effect=(True, False),
+        ),
+        pytest.raises(FeedbackSupersededError),
+    ):
+        await coordinator._async_reconcile_feedback(
+            organization_id=7,
+            alarm_id=11,
+            response=True,
+            duration=None,
+        )
+
+
+@pytest.mark.parametrize(
+    "error",
+    [
+        GroupAlarmAuthenticationError(401),
+        GroupAlarmTransportError("offline"),
+    ],
+)
+async def test_reconciliation_api_failure_boundaries(
+    hass: HomeAssistant,
+    error: GroupAlarmError,
+) -> None:
+    """Authentication escapes immediately; transient GET errors exhaust retries."""
+    coordinator, client = _coordinator(hass)
+    await _load_feedback_context(coordinator, client)
+    client.async_get_alarm.side_effect = error
+
+    with patch(
+        "custom_components.groupalarm_ha_connect.coordinator."
+        "FEEDBACK_RECONCILIATION_DELAYS",
+        (0.0,),
+    ):
+        if isinstance(error, GroupAlarmAuthenticationError):
+            with pytest.raises(GroupAlarmAuthenticationError):
+                await coordinator._async_reconcile_feedback(
+                    organization_id=7,
+                    alarm_id=11,
+                    response=True,
+                    duration=None,
+                )
+        else:
+            assert (
+                await coordinator._async_reconcile_feedback(
+                    organization_id=7,
+                    alarm_id=11,
+                    response=True,
+                    duration=None,
+                )
+                is None
+            )
+
+
+async def test_reconciliation_rejects_opposite_server_confirmation(
+    hass: HomeAssistant,
+) -> None:
+    """A server-confirmed opposite answer is an explicit conflict."""
+    coordinator, client = _coordinator(hass)
+    await _load_feedback_context(coordinator, client)
+    client.async_get_alarm.return_value = _detail(response=False)
+    with pytest.raises(FeedbackConflictError):
+        await coordinator._async_reconcile_feedback(
+            organization_id=7,
+            alarm_id=11,
+            response=True,
+            duration=None,
+        )
+    assert coordinator._pending_feedback == {}
+
+
+async def test_standard_transport_failure_can_still_reconcile(
+    hass: HomeAssistant,
+) -> None:
+    """An uncertain messaging POST is accepted only after canonical confirmation."""
+    coordinator, client = _coordinator(hass)
+    await _load_feedback_context(coordinator, client)
+    client.async_send_feedback.side_effect = GroupAlarmTransportError("offline")
+    client.async_get_alarm.return_value = _detail(response=True)
+    assert (
+        await coordinator.async_send_feedback(7, response=True)
+        is FeedbackDeliveryResult.CONFIRMED
+    )
+
+
+async def test_successful_posts_without_confirmation_fail_closed(
+    hass: HomeAssistant,
+) -> None:
+    """A successful HTTP response alone never becomes confirmed feedback."""
+    standard, standard_client = _coordinator(hass)
+    await _load_feedback_context(standard, standard_client)
+    standard_client.async_get_alarm.return_value = _detail()
+    with (
+        patch(
+            "custom_components.groupalarm_ha_connect.coordinator."
+            "FEEDBACK_RECONCILIATION_DELAYS",
+            (0.0,),
+        ),
+        pytest.raises(FeedbackNotConfirmedError),
+    ):
+        await standard.async_send_feedback(7, response=False)
+
+    timed, timed_client = _coordinator(
+        hass,
+        durations={"7": 12},
+        device_id=91,
+    )
+    await _load_feedback_context(timed, timed_client)
+    timed_client.async_get_alarm.return_value = _detail()
+    with (
+        patch(
+            "custom_components.groupalarm_ha_connect.coordinator."
+            "FEEDBACK_RECONCILIATION_DELAYS",
+            (0.0,),
+        ),
+        pytest.raises(FeedbackNotConfirmedError),
+    ):
+        await timed.async_send_feedback(7, response=True)
+
+
+async def test_feedback_target_changed_before_delivery(
+    hass: HomeAssistant,
+) -> None:
+    """A target replacement between lock acquisition and POST aborts delivery."""
+    coordinator, client = _coordinator(hass)
+    await _load_feedback_context(coordinator, client)
+    alarm = coordinator.snapshot(7).alarm
+    assert alarm is not None
+    with (
+        patch.object(
+            coordinator,
+            "_validated_feedback_alarm",
+            side_effect=(alarm, replace(alarm, id=12)),
+        ),
+        pytest.raises(FeedbackSupersededError),
+    ):
+        await coordinator.async_send_feedback(7, response=True)
+    client.async_send_feedback.assert_not_awaited()
+
+
+async def test_previous_alarm_falls_back_to_coordinator_cache(
+    hass: HomeAssistant,
+) -> None:
+    """A partial previous data set can still retain cached state for another org."""
+    coordinator, client = _coordinator(hass, (7, 12))
+    await _load_feedback_context(coordinator, client)
+    cached = coordinator._alarms[7]
+    coordinator.data = GroupAlarmCoordinatorData(
+        organizations=(
+            replace(
+                coordinator.snapshot(7),
+                organization_id=12,
+                organization_name="Org 12",
+            ),
+        )
+    )
+    assert coordinator._previous_alarm(7) is cached
+
+
+@pytest.mark.parametrize(
+    ("error", "key"),
+    [
+        (FeedbackUnavailableError(), "feedback_unavailable"),
+        (FeedbackBusyError(), "feedback_busy"),
+        (FeedbackPendingError(), "feedback_pending"),
+        (FeedbackConfigurationError(), "feedback_configuration"),
+        (FeedbackNotConfirmedError(), "feedback_not_confirmed"),
+        (FeedbackOutcomeUnknownError(), "feedback_outcome_unknown"),
+        (FeedbackSupersededError(), "feedback_superseded"),
+        (FeedbackConflictError(), "feedback_conflict"),
+        (FeedbackActionError(), "feedback_failed"),
+    ],
+)
+def test_feedback_action_translation_keys(
+    error: FeedbackActionError,
+    key: str,
+) -> None:
+    """Every sanitized domain action has a stable translation key."""
+    assert _action_exception_key(error) == key
+
+
+@pytest.mark.parametrize(
+    ("error", "key"),
+    [
+        (GroupAlarmAuthenticationError(401), "feedback_authentication"),
+        (GroupAlarmPermissionError(403), "feedback_permission"),
+        (GroupAlarmRateLimitError(30), "feedback_rate_limited"),
+        (GroupAlarmRequestError(400), "feedback_rejected"),
+        (FeedbackUnavailableError(), "feedback_unavailable"),
+        (GroupAlarmResponseError("invalid"), "feedback_failed"),
+    ],
+)
+async def test_button_maps_all_safe_service_errors(
+    hass: HomeAssistant,
+    error: GroupAlarmError | FeedbackActionError,
+    key: str,
+) -> None:
+    """Button failures expose translations without raw exception content."""
+    coordinator, client = _coordinator(hass)
+    await _load_feedback_context(coordinator, client)
+    button = GroupAlarmFeedbackButton(coordinator, 7, BUTTONS[0][0], True)
+    button.hass = hass
+    with (
+        patch.object(
+            coordinator,
+            "async_send_feedback",
+            new=AsyncMock(side_effect=error),
+        ),
+        patch.object(coordinator.entry, "async_start_reauth") as start_reauth,
+        pytest.raises(ServiceValidationError) as raised,
+    ):
+        await button.async_press()
+    assert raised.value.translation_key == key
+    assert start_reauth.call_count == int(
+        isinstance(error, GroupAlarmAuthenticationError)
+    )
+
+
+async def test_button_notification_noop_and_fallback_message(
+    hass: HomeAssistant,
+) -> None:
+    """Normal confirmation is silent; missing translations use safe built-ins."""
+    coordinator, client = _coordinator(hass)
+    await _load_feedback_context(coordinator, client)
+    button = GroupAlarmFeedbackButton(coordinator, 7, BUTTONS[0][0], True)
+    button.hass = hass
+
+    with patch(
+        "custom_components.groupalarm_ha_connect.button.async_create"
+    ) as create_notification:
+        await button._async_notify_degraded_result(FeedbackDeliveryResult.CONFIRMED)
+    create_notification.assert_not_called()
+
+    with (
+        patch(
+            "custom_components.groupalarm_ha_connect.button.async_get_translations",
+            new=AsyncMock(return_value={}),
+        ),
+        patch(
+            "custom_components.groupalarm_ha_connect.button.async_create"
+        ) as create_notification,
+    ):
+        await button._async_notify_degraded_result(
+            FeedbackDeliveryResult.CONFIRMED_DURATION_UNVERIFIED
+        )
+    assert "could not be verified" in create_notification.call_args.args[1]

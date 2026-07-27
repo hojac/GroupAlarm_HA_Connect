@@ -9,6 +9,7 @@ from homeassistant.const import Platform
 
 DOMAIN: Final = "groupalarm_ha_connect"
 BASE_URL: Final = "https://app.groupalarm.com/api/v1"
+INTEGRATION_VERSION: Final = "0.5.0"
 
 CONFIG_ENTRY_VERSION: Final = 3
 PLATFORMS: Final = (

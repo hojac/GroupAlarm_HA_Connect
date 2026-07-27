@@ -1,3 +1,45 @@
+# Changelog
+
+All notable changes to this project are documented in this file.
+
+## [0.5.0] - Unreleased
+
+### Added
+
+- Complete asynchronous integration rewrite for Home Assistant `2026.6.0`.
+- Multi-organization coordinator with a traffic-minimizing alarm-list gate.
+- Stable account-, organization-, device-, and entity-level identities.
+- UI setup, reauthentication, reconfigure, options reload, and tested
+  Config Entry migration.
+- Fail-safe feedback pipeline with bounded GET reconciliation, non-queuing
+  per-alarm locks, pending-write protection, and no blind duplicate POST.
+- Privacy-preserving diagnostics, actionable invalid-device repair issue, and
+  repository safety validation.
+- Reproducible Ruff, Mypy, Pytest, coverage, Hassfest, and HACS CI.
+- German and English translations and a state-safe wall-display template.
+
+### Changed
+
+- Requires Home Assistant `2026.6.0` or newer.
+- Alarm details load only for a new or changed alarm reference, pending
+  reconciliation, or the 15-minute safety refresh.
+- Personal feedback is shown only after matching canonical detail confirms it.
+- Documentation no longer treats `alarm.endDate`, an event end, or an arrival
+  duration as a personal feedback deadline.
+
+### Removed
+
+- Legacy synchronous architecture, unsafe fallback fields, tracked Python cache
+  files, token-derived Config Entry identities, and optimistic feedback state.
+
+### Known limitations
+
+- Activity, feedback eligibility, location, and deadline/countdown mappings need
+  anonymized current real payloads before they can leave `unknown` or
+  `unavailable`.
+- The alarm-list API does not document ordering, so a bounded first page cannot
+  formally guarantee the globally newest alarm.
+
 ## [0.3.10] - 2026-07-24
 
 ### Added
@@ -62,8 +104,6 @@
 ### Added
 - Neuer Sensor `Alarmzeitpunkt` als direkt lesbarer Zeitstempel für Dashboard-Karten.
 
-# Changelog
-
 ## 0.3.5
 
 ### Changed
@@ -84,8 +124,6 @@
 
 ### Changed
 - Updated integration version to 0.3.3.
-
-All notable changes to this project will be documented in this file.
 
 ## [0.3.2] - 2026-06-17
 

@@ -371,3 +371,18 @@ The contract does not yet prove:
 
 Production code must represent these as unknown rather than synthesize an
 answer.
+
+## Diagnostics and repair boundary
+
+Diagnostics never serialize config-entry data, client internals, raw API
+payloads or content-bearing domain fields. Real user, organization, alarm and
+event IDs are transformed into deterministic, config-entry-local SHA-256
+pseudonyms. Output is restricted to integration/configuration metadata, last
+successful update time, organization-scoped error classes, state flags and
+recognized JSON field paths without their values.
+
+The only Phase 5 repair issue is created when at least one arrival duration is
+stored without a positive integer app-device ID. This is actionable through
+the existing Options Flow. Unknown alarm semantics, API ordering, transport
+failures and missing real fixtures do not create repairs because a user cannot
+correct those conditions.

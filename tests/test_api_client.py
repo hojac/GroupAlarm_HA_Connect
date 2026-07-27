@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 from http import HTTPStatus
+from unittest.mock import AsyncMock, patch
 
 import pytest
 from aiohttp import ClientConnectionError
@@ -23,6 +24,11 @@ from custom_components.groupalarm_ha_connect.api import (
     GroupAlarmServerError,
     GroupAlarmTimeoutError,
     GroupAlarmTransportError,
+)
+from custom_components.groupalarm_ha_connect.api.client import (
+    _non_negative_int,
+    _parse_retry_after,
+    _positive_int,
 )
 
 BASE_URL = "https://example.test/api/v1"
@@ -321,3 +327,256 @@ async def test_real_asyncio_timeout_is_translated(
 
     with pytest.raises(GroupAlarmTimeoutError):
         await client.async_get_current_user()
+
+
+def test_scalar_validators_and_retry_after_edge_cases() -> None:
+    """Wire scalars reject bools and Retry-After accepts both standard forms."""
+    for value in (True, 0, -1, "1"):
+        with pytest.raises(GroupAlarmResponseError, match="field"):
+            _positive_int(value, "id")
+    for value in (True, -1, "0"):
+        with pytest.raises(GroupAlarmResponseError, match="field"):
+            _non_negative_int(value, "count")
+
+    assert _parse_retry_after(None) is None
+    assert _parse_retry_after("invalid") is None
+    assert _parse_retry_after("Wed, 21 Oct 2015 07:28:00 GMT") == 0
+    assert _parse_retry_after("Wed, 21 Oct 2015 07:28:00 -0000") == 0
+
+
+async def test_empty_token_is_rejected(
+    hass: HomeAssistant,
+) -> None:
+    """A client can never be constructed without authentication material."""
+    with pytest.raises(ValueError, match="token"):
+        GroupAlarmClient(async_get_clientsession(hass), "")
+
+
+async def test_invalid_json_body_is_sanitized(
+    client: GroupAlarmClient,
+    aioclient_mock: AiohttpClientMocker,
+) -> None:
+    """Malformed JSON never escapes parser or response-body details."""
+    aioclient_mock.get(
+        f"{BASE_URL}/user/",
+        text="{secret invalid json",
+        headers=JSON_HEADERS,
+    )
+
+    with pytest.raises(GroupAlarmResponseError, match="invalid JSON") as caught:
+        await client.async_get_current_user()
+    assert "secret" not in str(caught.value)
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        {},
+        [None],
+        [{"id": 7, "name": "   "}],
+    ],
+)
+async def test_organization_payload_boundaries(
+    client: GroupAlarmClient,
+    payload: object,
+) -> None:
+    """Organization responses require a list of valid reduced objects."""
+    with patch.object(
+        client,
+        "_async_request",
+        new=AsyncMock(return_value=payload),
+    ):
+        if payload == [{"id": 7, "name": "   "}]:
+            assert (await client.async_get_organizations())[0].name == "7"
+        else:
+            with pytest.raises(GroupAlarmResponseError):
+                await client.async_get_organizations()
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        {},
+        [{"id": 91, "ownerID": 42, "active": True}],
+        [{"id": 91, "ownerID": 41, "active": "yes"}],
+        [
+            {
+                "id": 91,
+                "ownerID": 41,
+                "active": True,
+                "isMainDevice": "yes",
+            }
+        ],
+    ],
+)
+async def test_device_payload_boundaries(
+    client: GroupAlarmClient,
+    payload: object,
+) -> None:
+    """Device ownership and booleans are validated before reduction."""
+    with (
+        patch.object(
+            client,
+            "_async_request",
+            new=AsyncMock(return_value=payload),
+        ),
+        pytest.raises(GroupAlarmResponseError),
+    ):
+        await client.async_get_app_devices(41)
+
+
+async def test_device_input_and_fallback_name(
+    client: GroupAlarmClient,
+) -> None:
+    """Device requests require a valid owner and tolerate an empty label."""
+    with pytest.raises(ValueError, match="owner_id"):
+        await client.async_get_app_devices(0)
+
+    payload = [
+        {
+            "id": 91,
+            "ownerID": 41,
+            "active": False,
+            "name": "",
+        }
+    ]
+    with patch.object(
+        client,
+        "_async_request",
+        new=AsyncMock(return_value=payload),
+    ):
+        device = (await client.async_get_app_devices(41))[0]
+    assert device.name == "91"
+    assert device.is_main_device is False
+
+
+@pytest.mark.parametrize("response_timeout", [9, 86_401])
+async def test_organization_timeout_input_and_wire_range(
+    client: GroupAlarmClient,
+    response_timeout: int,
+) -> None:
+    """Organization timeouts honor the documented 10..86400 range."""
+    with pytest.raises(ValueError, match="organization_id"):
+        await client.async_get_organization_timeout(0)
+
+    with (
+        patch.object(
+            client,
+            "_async_request",
+            new=AsyncMock(return_value={"timeout": response_timeout}),
+        ),
+        pytest.raises(GroupAlarmResponseError, match="timeout"),
+    ):
+        await client.async_get_organization_timeout(7)
+
+
+@pytest.mark.parametrize(
+    ("organization_id", "limit", "offset", "message"),
+    [
+        (0, 10, 0, "organization_id"),
+        (7, 0, 0, "limit"),
+        (7, 51, 0, "limit"),
+        (7, 10, -1, "offset"),
+    ],
+)
+async def test_alarm_list_input_validation(
+    client: GroupAlarmClient,
+    organization_id: int,
+    limit: int,
+    offset: int,
+    message: str,
+) -> None:
+    """Invalid pagination is rejected before any network request."""
+    with pytest.raises(ValueError, match=message):
+        await client.async_get_alarms(
+            organization_id,
+            limit=limit,
+            offset=offset,
+        )
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        {"alarms": {}, "totalAlarms": 0},
+        {
+            "alarms": [{"id": 11, "organizationID": 12}],
+            "totalAlarms": 1,
+        },
+        {
+            "alarms": [{"id": 11, "organizationID": 7}],
+            "totalAlarms": 0,
+        },
+    ],
+)
+async def test_alarm_list_response_validation(
+    client: GroupAlarmClient,
+    payload: object,
+) -> None:
+    """A page cannot cross organization boundaries or undercount its items."""
+    with (
+        patch.object(
+            client,
+            "_async_request",
+            new=AsyncMock(return_value=payload),
+        ),
+        pytest.raises(GroupAlarmResponseError),
+    ):
+        await client.async_get_alarms(7)
+
+
+async def test_alarm_without_organization_id_is_accepted(
+    client: GroupAlarmClient,
+) -> None:
+    """The optional list organization field need not be synthesized."""
+    payload = {"alarms": [{"id": 11}], "totalAlarms": 1}
+    with patch.object(
+        client,
+        "_async_request",
+        new=AsyncMock(return_value=payload),
+    ):
+        assert (await client.async_get_alarms(7)).alarms == ({"id": 11},)
+
+
+async def test_alarm_detail_input_and_identity_validation(
+    client: GroupAlarmClient,
+) -> None:
+    """A detail response must belong to the requested alarm."""
+    with pytest.raises(ValueError, match="alarm_id"):
+        await client.async_get_alarm(0)
+
+    with (
+        patch.object(
+            client,
+            "_async_request",
+            new=AsyncMock(return_value={"id": 12}),
+        ),
+        pytest.raises(GroupAlarmResponseError, match="identity"),
+    ):
+        await client.async_get_alarm(11)
+
+
+async def test_feedback_input_validation(
+    client: GroupAlarmClient,
+) -> None:
+    """Feedback calls reject unsafe identifiers and arrival durations."""
+    with pytest.raises(ValueError, match="identifiers"):
+        await client.async_send_feedback(
+            alarm_id=0,
+            organization_id=7,
+            user_id=41,
+            response=True,
+        )
+    with pytest.raises(ValueError, match="identifiers"):
+        await client.async_send_feedback_with_duration(
+            alarm_id=11,
+            device_id=0,
+            duration=12,
+        )
+    for duration in (0, 181):
+        with pytest.raises(ValueError, match="duration"):
+            await client.async_send_feedback_with_duration(
+                alarm_id=11,
+                device_id=91,
+                duration=duration,
+            )

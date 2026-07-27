@@ -213,3 +213,33 @@ alone.
 The API and state foundation can proceed. Production implementation of the
 deadline, countdown and feedback-button availability remains blocked. Those
 states must stay explicitly unknown until the missing semantics are evidenced.
+
+## Phase 5 platform-source refresh
+
+The quality implementation was checked again on 2026-07-27 against current
+official primary sources:
+
+- [Home Assistant diagnostics rule](https://developers.home-assistant.io/docs/core/integration-quality-scale/rules/diagnostics/)
+  requires useful diagnostics and explicit removal of passwords, tokens and
+  coordinates.
+- [Home Assistant repairs rule](https://developers.home-assistant.io/docs/core/integration-quality-scale/rules/repair-issues/)
+  requires issues to be actionable instead of reporting conditions the user
+  cannot fix.
+- [Home Assistant repairs platform](https://developers.home-assistant.io/docs/core/platform/repairs/)
+  documents issue identity, severity, persistence and translation contracts.
+- [Home Assistant coverage rule](https://developers.home-assistant.io/docs/core/integration-quality-scale/rules/test-coverage/)
+  keeps the target above 95 percent for all integration modules.
+- [HACS integration requirements](https://www.hacs.xyz/docs/publish/integration/)
+  confirm the one-integration repository layout, manifest metadata and local
+  brand directory.
+- [HACS validation action](https://www.hacs.xyz/docs/publish/action/)
+  validates the same repository rules used by HACS and supports integration
+  category checks on pushes and pull requests.
+- [Official GroupAlarm PAT guide](https://docs.groupalarm.com/de/article/profil-sicherheit-15o21cd/)
+  is the sole step-by-step PAT creation source linked from the README.
+
+These sources led to content-reduced diagnostics, one narrowly actionable
+invalid-device repair, pinned CI action revisions, an explicit repository
+safety gate and corrected user documentation. Repository topics remain
+external GitHub metadata; strict HACS validation will report their absence
+until the repository owner adds the required Home Assistant topic.

@@ -1,0 +1,27 @@
+name: Funktionswunsch
+description: Eine klar abgegrenzte Erweiterung vorschlagen
+title: "[Feature]: "
+labels:
+  - enhancement
+body:
+  - type: textarea
+    id: use_case
+    attributes:
+      label: Anwendungsfall
+      description: Welches konkrete Problem soll gelöst werden?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Vorschlag
+      description: Wie soll sich die Integration aus Nutzersicht verhalten?
+    validations:
+      required: true
+  - type: checkboxes
+    id: api_evidence
+    attributes:
+      label: API-Beleg
+      options:
+        - label: Ich habe keine realen Tokens oder personenbezogenen Payloads eingefügt.
+          required: true

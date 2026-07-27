@@ -216,5 +216,11 @@
         "name": "Benutzer-ID"
       }
     }
+  },
+  "issues": {
+    "invalid_feedback_device": {
+      "title": "Ungültiges GroupAlarm-Gerät für Anfahrtszeiten",
+      "description": "Für mindestens eine Organisation ist eine Anfahrtszeit konfiguriert, aber keine gültige GroupAlarm-Geräte-ID gespeichert. Öffne die Integrationsoptionen, wähle ein aktives App-Gerät aus oder entferne alle Anfahrtszeiten."
+    }
   }
 }

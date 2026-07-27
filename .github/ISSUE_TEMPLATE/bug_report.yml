@@ -1,0 +1,55 @@
+name: Fehlerbericht
+description: Reproduzierbares Problem mit GroupAlarm HA Connect melden
+title: "[Bug]: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Danke für den Bericht. Veröffentliche niemals Personal Access Tokens,
+        Push-Tokens, Namen, Alarmtexte, Adressen, Koordinaten oder rohe
+        GroupAlarm-Payloads.
+  - type: input
+    id: integration_version
+    attributes:
+      label: Integrationsversion
+      placeholder: "0.5.0"
+    validations:
+      required: true
+  - type: input
+    id: home_assistant_version
+    attributes:
+      label: Home-Assistant-Version
+      placeholder: "2026.6.0"
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: Beschreibe erwartetes und tatsächliches Verhalten.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Reproduktion
+      description: Welche Schritte lösen das Problem zuverlässig aus?
+    validations:
+      required: true
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Diagnostics und Protokoll
+      description: |
+        Füge nur die von Home Assistant erzeugten Diagnostics und bereinigte
+        Protokollzeilen ein. Prüfe auch diese vor dem Absenden manuell.
+      render: text
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: Datenschutz
+      options:
+        - label: Ich habe alle Inhalte auf Tokens und personenbezogene Daten geprüft.
+          required: true

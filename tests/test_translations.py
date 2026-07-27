@@ -5,6 +5,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from custom_components.groupalarm_ha_connect.const import INTEGRATION_VERSION
+
 ROOT = Path(__file__).parents[1]
 INTEGRATION = ROOT / "custom_components" / "groupalarm_ha_connect"
 
@@ -49,6 +51,7 @@ def test_translation_key_parity() -> None:
         "feedback_superseded",
         "feedback_unavailable",
     }
+    assert set(english["issues"]) == {"invalid_feedback_device"}
 
 
 def test_version_and_minimum_home_assistant_are_consistent() -> None:
@@ -57,6 +60,7 @@ def test_version_and_minimum_home_assistant_are_consistent() -> None:
     pyproject = (ROOT / "pyproject.toml").read_text()
 
     assert manifest["version"] == "0.5.0"
+    assert manifest["version"] == INTEGRATION_VERSION
     assert hacs["homeassistant"] == "2026.6.0"
     assert 'version = "0.5.0"' in pyproject
     assert 'requires-python = ">=3.14.2"' in pyproject

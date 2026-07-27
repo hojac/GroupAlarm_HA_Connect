@@ -43,6 +43,7 @@ from .models import (
     build_entity_unique_id,
     build_entry_unique_id,
 )
+from .repairs import async_sync_feedback_device_issue
 
 
 def _organization_names(
@@ -231,6 +232,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: GroupAlarmConfigEntry) -
         scan_interval,
     )
     await coordinator.async_config_entry_first_refresh()
+    async_sync_feedback_device_issue(hass, entry)
 
     _migrate_registries(
         hass,

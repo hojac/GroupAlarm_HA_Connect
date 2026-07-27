@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 import logging
 from dataclasses import dataclass, replace
-from datetime import timedelta
+from datetime import UTC, datetime, timedelta
 from time import monotonic
 
 from homeassistant.core import HomeAssistant
@@ -121,6 +121,12 @@ class GroupAlarmCoordinator(DataUpdateCoordinator[GroupAlarmCoordinatorData]):
         )
         self._feedback_locks: dict[tuple[int, int], asyncio.Lock] = {}
         self._pending_feedback: dict[tuple[int, int], bool] = {}
+        self._last_successful_update: datetime | None = None
+
+    @property
+    def last_successful_update(self) -> datetime | None:
+        """Return the timestamp of the latest update with usable data."""
+        return self._last_successful_update
 
     def snapshot(self, organization_id: int) -> OrganizationSnapshot:
         """Return one organization snapshot from coordinator memory."""
@@ -578,4 +584,5 @@ class GroupAlarmCoordinator(DataUpdateCoordinator[GroupAlarmCoordinatorData]):
                 )
             )
 
+        self._last_successful_update = datetime.now(UTC)
         return GroupAlarmCoordinatorData(organizations=tuple(snapshots))
