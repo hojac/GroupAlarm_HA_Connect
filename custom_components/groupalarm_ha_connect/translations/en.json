@@ -1,0 +1,115 @@
+{
+  "title": "GroupAlarm HA Connect",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect GroupAlarm",
+        "description": "Enter a GroupAlarm Personal Access Token. The polling interval may be set from 30 to 900 seconds.",
+        "data": {
+          "token": "Personal Access Token",
+          "scan_interval": "Polling interval"
+        }
+      },
+      "organizations": {
+        "title": "Select organizations",
+        "description": "Select one or more organizations for this config entry.",
+        "data": {
+          "organization_ids": "Organizations"
+        }
+      },
+      "arrival_times": {
+        "title": "Arrival duration",
+        "description": "Optionally set a default arrival duration for {organization}. Leave the field empty to disable it.",
+        "data": {
+          "arrival_duration": "Arrival duration"
+        }
+      },
+      "feedback_device": {
+        "title": "Select an app device",
+        "description": "Timed positive feedback requires an explicitly selected active GroupAlarm app device. Only its device ID is stored.",
+        "data": {
+          "feedback_device_id": "App device"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Reconnect GroupAlarm",
+        "description": "Enter a new Personal Access Token for the same GroupAlarm account.",
+        "data": {
+          "token": "Personal Access Token"
+        }
+      },
+      "reconfigure": {
+        "title": "Reconfigure GroupAlarm",
+        "description": "Enter a valid Personal Access Token for the currently configured GroupAlarm account.",
+        "data": {
+          "token": "Personal Access Token"
+        }
+      },
+      "reconfigure_organizations": {
+        "title": "Change organization scope",
+        "description": "Select the organizations that should belong to this config entry.",
+        "data": {
+          "organization_ids": "Organizations"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Unable to connect to GroupAlarm.",
+      "cannot_load_devices": "Unable to load GroupAlarm app devices.",
+      "invalid_auth": "The Personal Access Token was rejected.",
+      "invalid_device": "Select one of the available active app devices.",
+      "invalid_organization": "The selected organization is not available to this account.",
+      "invalid_response": "GroupAlarm returned an unexpected response.",
+      "no_active_devices": "No active GroupAlarm app device is available.",
+      "no_organizations": "This account has no accessible organizations.",
+      "no_organizations_selected": "Select at least one organization.",
+      "organization_already_configured": "At least one selected organization is already configured for this account.",
+      "wrong_account": "The token belongs to a different GroupAlarm account."
+    },
+    "abort": {
+      "already_configured": "This GroupAlarm account and organization scope is already configured.",
+      "reauth_successful": "The GroupAlarm account was reconnected.",
+      "reconfigure_successful": "The GroupAlarm configuration was updated."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "GroupAlarm options",
+        "description": "Choose organizations and a polling interval from 30 to 900 seconds.",
+        "data": {
+          "organization_ids": "Organizations",
+          "scan_interval": "Polling interval"
+        }
+      },
+      "arrival_times": {
+        "title": "Arrival duration",
+        "description": "Optionally set a default arrival duration for {organization}. Leave the field empty to disable it.",
+        "data": {
+          "arrival_duration": "Arrival duration"
+        }
+      },
+      "feedback_device": {
+        "title": "Select an app device",
+        "description": "Timed positive feedback requires an explicitly selected active GroupAlarm app device. Only its device ID is stored.",
+        "data": {
+          "feedback_device_id": "App device"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Unable to connect to GroupAlarm.",
+      "cannot_load_devices": "Unable to load GroupAlarm app devices.",
+      "invalid_auth": "The Personal Access Token was rejected.",
+      "invalid_device": "Select one of the available active app devices.",
+      "invalid_organization": "The selected organization is not available to this account.",
+      "invalid_response": "GroupAlarm returned an unexpected response.",
+      "no_active_devices": "No active GroupAlarm app device is available.",
+      "no_organizations_selected": "Select at least one organization.",
+      "organization_already_configured": "At least one selected organization is already configured for this account."
+    },
+    "abort": {
+      "invalid_auth": "The config entry does not contain usable credentials."
+    }
+  }
+}

@@ -1,0 +1,44 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+.Python
+.venv/
+venv/
+
+# Test, lint and type-check artifacts
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.tox/
+.nox/
+
+# Packaging
+build/
+dist/
+*.egg-info/
+
+# Home Assistant development
+.storage/
+deps/
+home-assistant.log*
+home-assistant_v2.db*
+secrets.yaml
+
+# Editors and operating systems
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*~
+
+# Local environment and secret files
+.env
+.env.*
+!.env.example
+*.local

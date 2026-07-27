@@ -7,8 +7,9 @@
   "config_flow": true,
   "dependencies": [],
   "documentation": "https://github.com/hojac/GroupAlarm_HA_Connect",
+  "integration_type": "service",
   "iot_class": "cloud_polling",
   "issue_tracker": "https://github.com/hojac/GroupAlarm_HA_Connect/issues",
   "requirements": [],
-  "version": "0.3.10"
+  "version": "0.5.0"
 }

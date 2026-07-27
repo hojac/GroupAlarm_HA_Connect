@@ -9,17 +9,16 @@ container structure and scalar types where practical.
 from __future__ import annotations
 
 import argparse
-from collections import Counter
 import hashlib
 import json
 import os
-from pathlib import Path
 import re
 import sys
-from typing import TypeAlias
+from collections import Counter
+from pathlib import Path
 
-JsonScalar: TypeAlias = str | int | float | bool | None
-JsonValue: TypeAlias = JsonScalar | list["JsonValue"] | dict[str, "JsonValue"]
+type JsonScalar = str | int | float | bool | None
+type JsonValue = JsonScalar | list[JsonValue] | dict[str, JsonValue]
 
 DEFAULT_SALT = "groupalarm-ha-connect-fixture-v1"
 
@@ -178,7 +177,7 @@ class Anonymizer:
         return self._walk(value, key=None)
 
     def _digest(self, category: str, value: object, length: int = 12) -> str:
-        payload = f"{category}:{type(value).__name__}:{value}".encode("utf-8")
+        payload = f"{category}:{type(value).__name__}:{value}".encode()
         return hashlib.blake2b(
             payload,
             key=self._key,
@@ -217,7 +216,7 @@ class Anonymizer:
     ) -> JsonScalar:
         if isinstance(value, bool) or value is None:
             return value
-        if isinstance(value, (int, float)):
+        if isinstance(value, int | float):
             return self._pseudo_coordinate(value, axis)
         if isinstance(value, str):
             try:
@@ -256,12 +255,8 @@ class Anonymizer:
                 output: list[JsonValue] = []
                 for index, item in enumerate(value):
                     if (
-                        isinstance(item, (int, float))
-                        and not isinstance(item, bool)
-                    ) or (
-                        isinstance(item, str)
-                        and self._is_numeric_string(item)
-                    ):
+                        isinstance(item, int | float) and not isinstance(item, bool)
+                    ) or (isinstance(item, str) and self._is_numeric_string(item)):
                         output.append(
                             self._pseudo_coordinate_value(
                                 item,
@@ -300,11 +295,7 @@ class Anonymizer:
         if normalized in _PHONE_KEYS:
             self.stats["phone"] += 1
             return self._pseudo_text("phone", value)
-        if (
-            normalized in _NAME_KEYS
-            or normalized.endswith("name")
-            or normalized.endswith("names")
-        ):
+        if normalized in _NAME_KEYS or normalized.endswith(("name", "names")):
             self.stats["name"] += 1
             return self._pseudo_text("name", value)
         if normalized in _ADDRESS_KEYS:

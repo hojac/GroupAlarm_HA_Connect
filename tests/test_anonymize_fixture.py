@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-from contextlib import redirect_stderr, redirect_stdout
 import io
 import json
-from pathlib import Path
 import tempfile
 import unittest
+from contextlib import redirect_stderr, redirect_stdout
+from pathlib import Path
 
 from scripts.anonymize_fixture import Anonymizer, anonymize_document, main
 
@@ -89,8 +89,7 @@ class AnonymizerTests(unittest.TestCase):
     def test_scrubs_embedded_email_phone_and_jwt_from_unknown_text(self) -> None:
         source = {
             "summary": (
-                "Contact alice@example.org at +49 123 456789; "
-                "credential eyJabc.def.ghi"
+                "Contact alice@example.org at +49 123 456789; credential eyJabc.def.ghi"
             )
         }
 

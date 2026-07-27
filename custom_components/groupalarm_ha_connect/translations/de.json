@@ -1,0 +1,115 @@
+{
+  "title": "GroupAlarm HA Connect",
+  "config": {
+    "step": {
+      "user": {
+        "title": "GroupAlarm verbinden",
+        "description": "Gib einen GroupAlarm Personal Access Token ein. Das Abfrageintervall kann zwischen 30 und 900 Sekunden liegen.",
+        "data": {
+          "token": "Personal Access Token",
+          "scan_interval": "Abfrageintervall"
+        }
+      },
+      "organizations": {
+        "title": "Organisationen auswählen",
+        "description": "Wähle eine oder mehrere Organisationen für diesen Konfigurationseintrag.",
+        "data": {
+          "organization_ids": "Organisationen"
+        }
+      },
+      "arrival_times": {
+        "title": "Anfahrtszeit",
+        "description": "Lege optional eine Standard-Anfahrtszeit für {organization} fest. Ein leeres Feld deaktiviert sie.",
+        "data": {
+          "arrival_duration": "Anfahrtszeit"
+        }
+      },
+      "feedback_device": {
+        "title": "App-Gerät auswählen",
+        "description": "Eine positive Rückmeldung mit Zeit erfordert ein ausdrücklich ausgewähltes aktives GroupAlarm-App-Gerät. Gespeichert wird nur dessen Geräte-ID.",
+        "data": {
+          "feedback_device_id": "App-Gerät"
+        }
+      },
+      "reauth_confirm": {
+        "title": "GroupAlarm erneut verbinden",
+        "description": "Gib einen neuen Personal Access Token für dasselbe GroupAlarm-Konto ein.",
+        "data": {
+          "token": "Personal Access Token"
+        }
+      },
+      "reconfigure": {
+        "title": "GroupAlarm neu konfigurieren",
+        "description": "Gib einen gültigen Personal Access Token für das aktuell konfigurierte GroupAlarm-Konto ein.",
+        "data": {
+          "token": "Personal Access Token"
+        }
+      },
+      "reconfigure_organizations": {
+        "title": "Organisationsumfang ändern",
+        "description": "Wähle die Organisationen, die zu diesem Konfigurationseintrag gehören sollen.",
+        "data": {
+          "organization_ids": "Organisationen"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Die Verbindung zu GroupAlarm ist nicht möglich.",
+      "cannot_load_devices": "Die GroupAlarm-App-Geräte konnten nicht geladen werden.",
+      "invalid_auth": "Der Personal Access Token wurde abgelehnt.",
+      "invalid_device": "Wähle eines der verfügbaren aktiven App-Geräte.",
+      "invalid_organization": "Die ausgewählte Organisation ist für dieses Konto nicht verfügbar.",
+      "invalid_response": "GroupAlarm hat eine unerwartete Antwort geliefert.",
+      "no_active_devices": "Es ist kein aktives GroupAlarm-App-Gerät verfügbar.",
+      "no_organizations": "Für dieses Konto sind keine Organisationen zugänglich.",
+      "no_organizations_selected": "Wähle mindestens eine Organisation.",
+      "organization_already_configured": "Mindestens eine ausgewählte Organisation ist für dieses Konto bereits konfiguriert.",
+      "wrong_account": "Der Token gehört zu einem anderen GroupAlarm-Konto."
+    },
+    "abort": {
+      "already_configured": "Dieses GroupAlarm-Konto und dieser Organisationsumfang sind bereits konfiguriert.",
+      "reauth_successful": "Das GroupAlarm-Konto wurde erneut verbunden.",
+      "reconfigure_successful": "Die GroupAlarm-Konfiguration wurde aktualisiert."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "GroupAlarm-Optionen",
+        "description": "Wähle Organisationen und ein Abfrageintervall zwischen 30 und 900 Sekunden.",
+        "data": {
+          "organization_ids": "Organisationen",
+          "scan_interval": "Abfrageintervall"
+        }
+      },
+      "arrival_times": {
+        "title": "Anfahrtszeit",
+        "description": "Lege optional eine Standard-Anfahrtszeit für {organization} fest. Ein leeres Feld deaktiviert sie.",
+        "data": {
+          "arrival_duration": "Anfahrtszeit"
+        }
+      },
+      "feedback_device": {
+        "title": "App-Gerät auswählen",
+        "description": "Eine positive Rückmeldung mit Zeit erfordert ein ausdrücklich ausgewähltes aktives GroupAlarm-App-Gerät. Gespeichert wird nur dessen Geräte-ID.",
+        "data": {
+          "feedback_device_id": "App-Gerät"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Die Verbindung zu GroupAlarm ist nicht möglich.",
+      "cannot_load_devices": "Die GroupAlarm-App-Geräte konnten nicht geladen werden.",
+      "invalid_auth": "Der Personal Access Token wurde abgelehnt.",
+      "invalid_device": "Wähle eines der verfügbaren aktiven App-Geräte.",
+      "invalid_organization": "Die ausgewählte Organisation ist für dieses Konto nicht verfügbar.",
+      "invalid_response": "GroupAlarm hat eine unerwartete Antwort geliefert.",
+      "no_active_devices": "Es ist kein aktives GroupAlarm-App-Gerät verfügbar.",
+      "no_organizations_selected": "Wähle mindestens eine Organisation.",
+      "organization_already_configured": "Mindestens eine ausgewählte Organisation ist für dieses Konto bereits konfiguriert."
+    },
+    "abort": {
+      "invalid_auth": "Der Konfigurationseintrag enthält keine verwendbaren Zugangsdaten."
+    }
+  }
+}
