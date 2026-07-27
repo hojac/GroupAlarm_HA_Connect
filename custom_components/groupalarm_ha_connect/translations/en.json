@@ -112,10 +112,65 @@
       "invalid_auth": "The config entry does not contain usable credentials."
     }
   },
+  "exceptions": {
+    "feedback_unavailable": {
+      "message": "Feedback is not available for this alarm."
+    },
+    "feedback_busy": {
+      "message": "A feedback action for this alarm is already running."
+    },
+    "feedback_pending": {
+      "message": "An earlier feedback action has not yet been confirmed by GroupAlarm."
+    },
+    "feedback_configuration": {
+      "message": "The configured arrival duration or app device is invalid."
+    },
+    "feedback_not_confirmed": {
+      "message": "GroupAlarm accepted the request but did not confirm the feedback in time. No second request was sent."
+    },
+    "feedback_outcome_unknown": {
+      "message": "The feedback request may have reached GroupAlarm, but its outcome could not be confirmed. No second request was sent."
+    },
+    "feedback_superseded": {
+      "message": "A newer alarm replaced the target before the feedback could be confirmed."
+    },
+    "feedback_conflict": {
+      "message": "GroupAlarm confirmed a different response for this alarm."
+    },
+    "feedback_authentication": {
+      "message": "The Personal Access Token was rejected. Reauthentication has been started."
+    },
+    "feedback_permission": {
+      "message": "The GroupAlarm account is not permitted to send this feedback."
+    },
+    "feedback_rate_limited": {
+      "message": "GroupAlarm is rate limiting feedback requests. Try again later."
+    },
+    "feedback_rejected": {
+      "message": "GroupAlarm rejected the feedback request."
+    },
+    "feedback_failed": {
+      "message": "The feedback action failed safely. No unconfirmed fallback request was sent."
+    },
+    "feedback_sent_without_duration": {
+      "message": "Feedback was sent, but the arrival time could not be transmitted."
+    },
+    "feedback_duration_unverified": {
+      "message": "Feedback was confirmed, but the arrival time could not be verified."
+    }
+  },
   "entity": {
     "binary_sensor": {
       "active_alert": {
         "name": "Active alarm"
+      }
+    },
+    "button": {
+      "feedback_positive": {
+        "name": "Coming"
+      },
+      "feedback_negative": {
+        "name": "Not coming"
       }
     },
     "device_tracker": {

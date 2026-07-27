@@ -13,6 +13,7 @@ BASE_URL: Final = "https://app.groupalarm.com/api/v1"
 CONFIG_ENTRY_VERSION: Final = 3
 PLATFORMS: Final = (
     Platform.BINARY_SENSOR,
+    Platform.BUTTON,
     Platform.DEVICE_TRACKER,
     Platform.SENSOR,
 )
@@ -40,3 +41,4 @@ REQUEST_TIMEOUT_SECONDS: Final = 30.0
 ALARM_GATE_LIMIT: Final = 10
 MAX_PARALLEL_ORGANIZATIONS: Final = 4
 DETAIL_SAFETY_REFRESH: Final = timedelta(minutes=15)
+FEEDBACK_RECONCILIATION_DELAYS: Final = (0.0, 1.0, 2.0)

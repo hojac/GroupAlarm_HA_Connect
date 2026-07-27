@@ -163,6 +163,18 @@ until real payloads prove server ordering.
 | POST transport outcome unknown | any | No blind second POST; fetch canonical detail | Confirm, or remain `unknown` with error |
 | New alarm ID arrives during reconciliation | old alarm pending | Discard old personal state/result | Reconcile only the new alarm independently |
 
+Phase 3 uses one non-queuing asynchronous lock per alarm/organization. It runs
+at most three reconciliation GETs with delays `0`, `1` and `2` seconds.
+Unconfirmed writes remain pending and force canonical detail on the normal
+polling cadence; this blocks another button press without creating aggressive
+polling. A new alarm ID discards pending state for the old target.
+
+An explicitly rejected app-duration request may fall back once to standard
+positive feedback. Timeout, connection loss and `5xx` never cause an immediate
+second POST. Canonical `feedback[].userDuration` can confirm the requested
+duration, but a missing duration never weakens a confirmed personal response
+and never licenses another POST.
+
 ## Countdown lifecycle
 
 The local ticker is separate from API polling and owned once per config entry.
@@ -197,7 +209,7 @@ official `optionalContent` schema is untyped and no anonymized real location
 fixture has yet proven its JSON paths. The legacy integration's fallback paths
 are therefore not copied into the normalizer.
 
-## Phase 2 read model
+## Implemented Phase 3 entity model
 
 The implemented read-only entity set currently exposes alarm ID, message,
 start timestamp, compatibility alarm time, event name, aggregate feedback
@@ -205,9 +217,16 @@ counts, server-confirmed personal feedback, and a disabled-by-default user-ID
 diagnostic sensor. Activity remains an unknown binary-sensor state, and the
 location tracker remains unavailable, until their source mappings are proven.
 
+Phase 3 adds translated positive and negative button entities, server-confirmed
+reconciliation, optional arrival-duration delivery, pending-write protection
+and safe fallback notifications. The buttons intentionally remain unavailable
+for currently known payloads because feedback eligibility is still `unknown`;
+tests exercise the complete action path with a fixture-proven `open` snapshot.
+An anonymized real open-alarm payload is required before the production mapper
+may emit `open`.
+
 Deadline-end, deadline-status and countdown entities remain deferred to Phase
-4. Buttons remain deferred to Phase 3 because feedback eligibility is still
-unknown and fail-safe button availability requires `open`.
+4.
 
 ## Availability and error model
 
@@ -222,7 +241,7 @@ unknown and fail-safe button availability requires `open`.
 Log once on transition into an unavailable state and once on recovery. Do not
 log raw payloads or repeat the same failure every poll.
 
-## Planned typed components
+## Typed components
 
 - Frozen enums/dataclasses for every state above.
 - `GroupAlarmClient`: asynchronous transport and defensive payload validation.
@@ -231,7 +250,7 @@ log raw payloads or repeat the same failure every poll.
   lifecycle-owned resources.
 - One coordinator with bounded per-organization concurrency.
 - Entity descriptions and entities that only project normalized values.
-- Per-alarm/organization feedback locks.
+- Per-alarm/organization feedback locks and pending-write reconciliation.
 - One optional countdown ticker registry per config entry.
 
 ## Implementation phases and gates

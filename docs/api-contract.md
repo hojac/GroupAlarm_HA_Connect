@@ -144,6 +144,12 @@ The Swagger schema does not enumerate `state`; `RESPONDED`, `TIMEDOUT` and
 `UNAVAILABLE` are accepted because repository Issues #2/#20 record them from
 real payloads. New values remain unknown until evidenced.
 
+For the same matching `RESPONDED` record, `userDuration` is the documented
+traffic duration to the organization in minutes. It is consumed only to
+confirm whether an explicitly requested arrival duration reached canonical
+detail. It does not influence personal feedback, activity, eligibility or a
+deadline.
+
 ### Organization feedback timeout
 
 `GET /api/v1/messaging/timeout/{organizationID}`
@@ -319,14 +325,15 @@ entry. Organization names are refreshed there, not during alarm polling.
 `DataUpdateCoordinator(always_update=False)` suppresses entity callbacks when
 the immutable normalized snapshots compare equal.
 
-The organization timeout is not requested in Phase 2 because no proven
-reference timestamp currently turns that duration into a deadline or
+The organization timeout is not requested in Phase 2 or Phase 3 because no
+proven reference timestamp currently turns that duration into a deadline or
 eligibility decision. It will be loaded and cached when Phase 4 can consume it
 without creating unused setup traffic.
 
 ## Feedback delivery and reconciliation
 
-Each alarm/organization has one asynchronous send lock.
+Each alarm/organization has one asynchronous, non-queuing send lock. A second
+press is rejected instead of waiting to issue a later duplicate POST.
 
 1. Validate current alarm identity and proven feedback eligibility.
 2. Send standard feedback, or positive duration feedback when configured.
@@ -338,8 +345,18 @@ Each alarm/organization has one asynchronous send lock.
 5. After any accepted POST, perform a short bounded detail reconciliation.
 6. Change personal state only on a matching server-confirmed GET record.
 
-The exact number/backoff of reconciliation attempts is a Phase 3
-implementation constant and will be tested. It must remain bounded.
+Phase 3 performs at most three detail GETs: immediately, after one second and
+after two further seconds. An accepted or transport-ambiguous write that
+remains unconfirmed is retained as pending. Its buttons stay disabled and the
+regular low-traffic poll temporarily forces one canonical detail GET per poll
+until the same response is confirmed or a new alarm replaces the target.
+
+The app endpoint falls back to standard feedback only for a sanitized
+`GroupAlarmRequestError`, representing an explicit HTTP request rejection.
+Transport failures and `5xx` responses reconcile first and never trigger a
+second POST while the first outcome is unknown. A confirmed response with a
+missing or different `userDuration` also does not trigger a fallback; the user
+is informed that duration delivery could not be verified.
 
 ## Blocked semantics
 

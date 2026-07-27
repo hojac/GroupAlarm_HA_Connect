@@ -125,6 +125,7 @@ class GroupAlarmAlarm:
     event_abort_present: bool
     feedback_counts: FeedbackCounts
     personal_feedback: PersonalFeedback
+    personal_feedback_duration: int | None
     activity: AlarmActivity
     feedback_eligibility: FeedbackEligibility
     deadline_status: DeadlineStatus

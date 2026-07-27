@@ -142,6 +142,8 @@ two-stage polling design in `api-contract.md`.
   notified user times out and cannot answer. Its documented range is
   `10..86400`.
 - `AnswerData.duration` is traffic duration to the organization in minutes.
+- `Feedback.userDuration` is the canonical detail field for the user's traffic
+  duration and may confirm a previously requested arrival duration.
 - `Device` responses contain `pushToken`; the integration must immediately
   reduce those payloads to non-sensitive selection data.
 

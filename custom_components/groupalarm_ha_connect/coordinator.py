@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import timedelta
 from time import monotonic
 
@@ -26,18 +26,36 @@ from .api import (
 )
 from .const import (
     ALARM_GATE_LIMIT,
+    CONF_FEEDBACK_DEVICE_ID,
+    CONF_ORGANIZATION_DURATIONS,
     DETAIL_SAFETY_REFRESH,
     DOMAIN,
+    FEEDBACK_RECONCILIATION_DELAYS,
+    MAX_ARRIVAL_DURATION,
     MAX_PARALLEL_ORGANIZATIONS,
+    MIN_ARRIVAL_DURATION,
+)
+from .feedback import (
+    FeedbackBusyError,
+    FeedbackConfigurationError,
+    FeedbackConflictError,
+    FeedbackDeliveryResult,
+    FeedbackNotConfirmedError,
+    FeedbackOutcomeUnknownError,
+    FeedbackPendingError,
+    FeedbackSupersededError,
+    FeedbackUnavailableError,
 )
 from .mapper import normalize_alarm, select_alarm_reference
 from .models import (
     AlarmReference,
+    FeedbackEligibility,
     GroupAlarmAlarm,
     GroupAlarmConfigEntry,
     GroupAlarmCoordinatorData,
     OrganizationError,
     OrganizationSnapshot,
+    PersonalFeedback,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -90,6 +108,7 @@ class GroupAlarmCoordinator(DataUpdateCoordinator[GroupAlarmCoordinatorData]):
             update_interval=timedelta(seconds=scan_interval),
             always_update=False,
         )
+        self.entry = entry
         self.client = client
         self.user = user
         self.organization_names = dict(sorted(organization_names.items()))
@@ -100,10 +119,311 @@ class GroupAlarmCoordinator(DataUpdateCoordinator[GroupAlarmCoordinatorData]):
         self._errors: dict[int, OrganizationError | None] = dict.fromkeys(
             organization_names
         )
+        self._feedback_locks: dict[tuple[int, int], asyncio.Lock] = {}
+        self._pending_feedback: dict[tuple[int, int], bool] = {}
 
     def snapshot(self, organization_id: int) -> OrganizationSnapshot:
         """Return one organization snapshot from coordinator memory."""
         return self.data.for_organization(organization_id)
+
+    @staticmethod
+    def _feedback_key(organization_id: int, alarm_id: int) -> tuple[int, int]:
+        """Return the lock and pending-state identity for one alarm."""
+        return organization_id, alarm_id
+
+    def _clear_pending_feedback(
+        self,
+        organization_id: int,
+        *,
+        keep_alarm_id: int | None = None,
+    ) -> None:
+        """Discard pending writes that no longer belong to the current alarm."""
+        for key in tuple(self._pending_feedback):
+            if key[0] == organization_id and key[1] != keep_alarm_id:
+                self._pending_feedback.pop(key, None)
+
+    def _resolve_pending_feedback(self, alarm: GroupAlarmAlarm) -> None:
+        """Clear a pending write only after a matching canonical GET."""
+        key = self._feedback_key(alarm.organization_id, alarm.id)
+        if key not in self._pending_feedback:
+            return
+        expected = (
+            PersonalFeedback.POSITIVE
+            if self._pending_feedback[key]
+            else PersonalFeedback.NEGATIVE
+        )
+        if alarm.personal_feedback is expected:
+            self._pending_feedback.pop(key, None)
+
+    def _validated_feedback_alarm(self, organization_id: int) -> GroupAlarmAlarm:
+        """Return an eligible current alarm or reject the action fail-safe."""
+        try:
+            snapshot = self.snapshot(organization_id)
+        except (AttributeError, KeyError) as err:
+            raise FeedbackUnavailableError from err
+        alarm = snapshot.alarm
+        if (
+            not snapshot.available
+            or alarm is None
+            or alarm.feedback_eligibility is not FeedbackEligibility.OPEN
+            or alarm.personal_feedback is not PersonalFeedback.UNKNOWN
+        ):
+            raise FeedbackUnavailableError
+        key = self._feedback_key(organization_id, alarm.id)
+        if key in self._pending_feedback:
+            raise FeedbackPendingError
+        return alarm
+
+    def is_feedback_in_progress(
+        self,
+        organization_id: int,
+        alarm_id: int,
+    ) -> bool:
+        """Return whether an action currently owns the alarm's send lock."""
+        lock = self._feedback_locks.get(self._feedback_key(organization_id, alarm_id))
+        return lock is not None and lock.locked()
+
+    def can_send_feedback(self, organization_id: int) -> bool:
+        """Return whether a button can safely start a feedback action."""
+        try:
+            alarm = self._validated_feedback_alarm(organization_id)
+        except (FeedbackUnavailableError, FeedbackPendingError):
+            return False
+        return not self.is_feedback_in_progress(organization_id, alarm.id)
+
+    def _arrival_duration(self, organization_id: int) -> int | None:
+        """Return one validated configured duration."""
+        raw_durations = self.entry.options.get(CONF_ORGANIZATION_DURATIONS, {})
+        if not isinstance(raw_durations, dict):
+            raise FeedbackConfigurationError
+        raw_duration: object = raw_durations.get(
+            str(organization_id),
+            raw_durations.get(organization_id),
+        )
+        if raw_duration is None:
+            return None
+        if (
+            isinstance(raw_duration, bool)
+            or not isinstance(raw_duration, int)
+            or not MIN_ARRIVAL_DURATION <= raw_duration <= MAX_ARRIVAL_DURATION
+        ):
+            raise FeedbackConfigurationError
+        return raw_duration
+
+    def _feedback_device_id(self) -> int:
+        """Return the explicitly selected positive feedback device."""
+        device_id = self.entry.options.get(CONF_FEEDBACK_DEVICE_ID)
+        if isinstance(device_id, bool) or not isinstance(device_id, int):
+            raise FeedbackConfigurationError
+        if device_id < 1:
+            raise FeedbackConfigurationError
+        return device_id
+
+    def _target_is_current(self, organization_id: int, alarm_id: int) -> bool:
+        """Return whether reconciliation still belongs to the selected alarm."""
+        reference = self._references.get(organization_id)
+        return reference is not None and reference.id == alarm_id
+
+    def _publish_reconciled_alarm(self, alarm: GroupAlarmAlarm) -> None:
+        """Publish canonical detail obtained after a feedback write."""
+        if not self._target_is_current(alarm.organization_id, alarm.id):
+            raise FeedbackSupersededError
+        self._alarms[alarm.organization_id] = alarm
+        self._detail_loaded_at[alarm.organization_id] = monotonic()
+        self._resolve_pending_feedback(alarm)
+
+        snapshots = tuple(
+            replace(snapshot, alarm=alarm)
+            if snapshot.organization_id == alarm.organization_id
+            else snapshot
+            for snapshot in self.data.organizations
+        )
+        self.async_set_updated_data(GroupAlarmCoordinatorData(organizations=snapshots))
+
+    async def _async_reconcile_feedback(
+        self,
+        *,
+        organization_id: int,
+        alarm_id: int,
+        response: bool,
+        duration: int | None,
+    ) -> FeedbackDeliveryResult | None:
+        """Perform a bounded canonical GET reconciliation."""
+        expected = PersonalFeedback.POSITIVE if response else PersonalFeedback.NEGATIVE
+        duration_unverified = False
+
+        for delay in FEEDBACK_RECONCILIATION_DELAYS:
+            if not self._target_is_current(organization_id, alarm_id):
+                raise FeedbackSupersededError
+            if delay:
+                await asyncio.sleep(delay)
+            if not self._target_is_current(organization_id, alarm_id):
+                raise FeedbackSupersededError
+
+            try:
+                detail = await self.client.async_get_alarm(alarm_id)
+                alarm = normalize_alarm(
+                    detail,
+                    alarm_id=alarm_id,
+                    organization_id=organization_id,
+                    user_id=self.user.id,
+                )
+            except GroupAlarmAuthenticationError:
+                raise
+            except GroupAlarmError:
+                continue
+
+            self._publish_reconciled_alarm(alarm)
+            if alarm.personal_feedback is expected:
+                if (
+                    duration is not None
+                    and alarm.personal_feedback_duration != duration
+                ):
+                    duration_unverified = True
+                    continue
+                return FeedbackDeliveryResult.CONFIRMED
+            if alarm.personal_feedback in (
+                PersonalFeedback.POSITIVE,
+                PersonalFeedback.NEGATIVE,
+            ):
+                self._pending_feedback.pop(
+                    self._feedback_key(organization_id, alarm_id),
+                    None,
+                )
+                raise FeedbackConflictError
+
+        if duration_unverified:
+            return FeedbackDeliveryResult.CONFIRMED_DURATION_UNVERIFIED
+        return None
+
+    def _mark_feedback_pending(
+        self,
+        organization_id: int,
+        alarm_id: int,
+        response: bool,
+    ) -> None:
+        """Retain an unresolved write so a regular poll forces canonical detail."""
+        self._pending_feedback[self._feedback_key(organization_id, alarm_id)] = response
+
+    async def _async_send_standard_feedback(
+        self,
+        *,
+        organization_id: int,
+        alarm_id: int,
+        response: bool,
+    ) -> FeedbackDeliveryResult:
+        """Send standard feedback and require a matching canonical GET."""
+        try:
+            await self.client.async_send_feedback(
+                alarm_id=alarm_id,
+                organization_id=organization_id,
+                user_id=self.user.id,
+                response=response,
+            )
+        except (GroupAlarmServerError, GroupAlarmTransportError):
+            self._mark_feedback_pending(organization_id, alarm_id, response)
+            reconciled = await self._async_reconcile_feedback(
+                organization_id=organization_id,
+                alarm_id=alarm_id,
+                response=response,
+                duration=None,
+            )
+            if reconciled is not None:
+                return reconciled
+            raise FeedbackOutcomeUnknownError from None
+
+        self._mark_feedback_pending(organization_id, alarm_id, response)
+        reconciled = await self._async_reconcile_feedback(
+            organization_id=organization_id,
+            alarm_id=alarm_id,
+            response=response,
+            duration=None,
+        )
+        if reconciled is not None:
+            return reconciled
+        raise FeedbackNotConfirmedError
+
+    async def _async_deliver_feedback(
+        self,
+        *,
+        organization_id: int,
+        alarm_id: int,
+        response: bool,
+    ) -> FeedbackDeliveryResult:
+        """Choose one endpoint and reconcile without a blind second POST."""
+        duration = self._arrival_duration(organization_id) if response else None
+        if duration is None:
+            return await self._async_send_standard_feedback(
+                organization_id=organization_id,
+                alarm_id=alarm_id,
+                response=response,
+            )
+
+        device_id = self._feedback_device_id()
+        try:
+            await self.client.async_send_feedback_with_duration(
+                alarm_id=alarm_id,
+                device_id=device_id,
+                duration=duration,
+            )
+        except GroupAlarmRequestError:
+            await self._async_send_standard_feedback(
+                organization_id=organization_id,
+                alarm_id=alarm_id,
+                response=True,
+            )
+            return FeedbackDeliveryResult.CONFIRMED_WITHOUT_DURATION
+        except (GroupAlarmServerError, GroupAlarmTransportError):
+            self._mark_feedback_pending(organization_id, alarm_id, True)
+            reconciled = await self._async_reconcile_feedback(
+                organization_id=organization_id,
+                alarm_id=alarm_id,
+                response=True,
+                duration=duration,
+            )
+            if reconciled is not None:
+                return reconciled
+            raise FeedbackOutcomeUnknownError from None
+
+        self._mark_feedback_pending(organization_id, alarm_id, True)
+        reconciled = await self._async_reconcile_feedback(
+            organization_id=organization_id,
+            alarm_id=alarm_id,
+            response=True,
+            duration=duration,
+        )
+        if reconciled is not None:
+            return reconciled
+        raise FeedbackNotConfirmedError
+
+    async def async_send_feedback(
+        self,
+        organization_id: int,
+        *,
+        response: bool,
+    ) -> FeedbackDeliveryResult:
+        """Send one feedback action under a non-queuing per-alarm lock."""
+        alarm = self._validated_feedback_alarm(organization_id)
+        key = self._feedback_key(organization_id, alarm.id)
+        lock = self._feedback_locks.setdefault(key, asyncio.Lock())
+        if lock.locked():
+            raise FeedbackBusyError
+
+        await lock.acquire()
+        self.async_update_listeners()
+        try:
+            current_alarm = self._validated_feedback_alarm(organization_id)
+            if current_alarm.id != alarm.id:
+                raise FeedbackSupersededError
+            return await self._async_deliver_feedback(
+                organization_id=organization_id,
+                alarm_id=alarm.id,
+                response=response,
+            )
+        finally:
+            lock.release()
+            self._feedback_locks.pop(key, None)
+            self.async_update_listeners()
 
     async def _async_update_organization(
         self,
@@ -118,12 +438,21 @@ class GroupAlarmCoordinator(DataUpdateCoordinator[GroupAlarmCoordinatorData]):
                 )
                 reference = select_alarm_reference(page, organization_id)
                 if reference is None:
+                    self._clear_pending_feedback(organization_id)
                     self._references.pop(organization_id, None)
                     self._alarms.pop(organization_id, None)
                     self._detail_loaded_at.pop(organization_id, None)
                     return _OrganizationResult(organization_id=organization_id)
 
                 previous_reference = self._references.get(organization_id)
+                if (
+                    previous_reference is not None
+                    and previous_reference.id != reference.id
+                ):
+                    self._clear_pending_feedback(
+                        organization_id,
+                        keep_alarm_id=reference.id,
+                    )
                 loaded_at = self._detail_loaded_at.get(organization_id)
                 safety_refresh_due = (
                     loaded_at is None
@@ -133,6 +462,8 @@ class GroupAlarmCoordinator(DataUpdateCoordinator[GroupAlarmCoordinatorData]):
                     previous_reference != reference
                     or organization_id not in self._alarms
                     or safety_refresh_due
+                    or self._feedback_key(organization_id, reference.id)
+                    in self._pending_feedback
                 )
                 if detail_required:
                     detail = await self.client.async_get_alarm(reference.id)
@@ -144,6 +475,7 @@ class GroupAlarmCoordinator(DataUpdateCoordinator[GroupAlarmCoordinatorData]):
                     )
                     self._alarms[organization_id] = alarm
                     self._detail_loaded_at[organization_id] = monotonic()
+                    self._resolve_pending_feedback(alarm)
 
                 self._references[organization_id] = reference
                 return _OrganizationResult(

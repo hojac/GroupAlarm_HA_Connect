@@ -174,12 +174,13 @@ def _personal_feedback(
     *,
     alarm_id: int,
     user_id: int,
-) -> PersonalFeedback:
+) -> tuple[PersonalFeedback, int | None]:
     """Return only a matching server-confirmed personal response."""
     if not isinstance(value, list):
         raise GroupAlarmResponseError("Invalid GroupAlarm field: alarm.feedback")
 
     confirmed: set[PersonalFeedback] = set()
+    durations: set[int] = set()
     for item in value:
         if not isinstance(item, dict):
             continue
@@ -200,14 +201,27 @@ def _personal_feedback(
             confirmed.add(PersonalFeedback.POSITIVE)
         elif feedback is False:
             confirmed.add(PersonalFeedback.NEGATIVE)
+        else:
+            continue
+
+        duration = item.get("userDuration")
+        if duration is not None:
+            durations.add(
+                _optional_non_negative_int(
+                    duration,
+                    "alarm.feedback[].userDuration",
+                )
+                or 0
+            )
 
     if len(confirmed) > 1:
         raise GroupAlarmResponseError(
             "GroupAlarm returned conflicting personal feedback"
         )
     if confirmed:
-        return next(iter(confirmed))
-    return PersonalFeedback.UNKNOWN
+        duration = next(iter(durations)) if len(durations) == 1 else None
+        return next(iter(confirmed)), duration
+    return PersonalFeedback.UNKNOWN, None
 
 
 def _location(_value: object) -> AlarmLocation | None:
@@ -259,7 +273,7 @@ def normalize_alarm(
     if abort is not None:
         _object(abort, "alarm.event.abort")
 
-    personal_feedback = _personal_feedback(
+    personal_feedback, personal_feedback_duration = _personal_feedback(
         payload.get("feedback"),
         alarm_id=alarm_id,
         user_id=user_id,
@@ -285,6 +299,7 @@ def normalize_alarm(
             payload.get("feedbackQuantity"), "alarm.feedbackQuantity"
         ),
         personal_feedback=personal_feedback,
+        personal_feedback_duration=personal_feedback_duration,
         # Official and real-payload evidence still does not prove these axes.
         activity=AlarmActivity.UNKNOWN,
         feedback_eligibility=FeedbackEligibility.UNKNOWN,

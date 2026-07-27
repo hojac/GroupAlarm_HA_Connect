@@ -112,10 +112,65 @@
       "invalid_auth": "Der Konfigurationseintrag enthält keine verwendbaren Zugangsdaten."
     }
   },
+  "exceptions": {
+    "feedback_unavailable": {
+      "message": "Für diesen Alarm ist keine Rückmeldung verfügbar."
+    },
+    "feedback_busy": {
+      "message": "Für diesen Alarm läuft bereits eine Rückmeldeaktion."
+    },
+    "feedback_pending": {
+      "message": "Eine frühere Rückmeldeaktion wurde von GroupAlarm noch nicht bestätigt."
+    },
+    "feedback_configuration": {
+      "message": "Die konfigurierte Anfahrtszeit oder das App-Gerät ist ungültig."
+    },
+    "feedback_not_confirmed": {
+      "message": "GroupAlarm hat die Anfrage angenommen, die Rückmeldung aber nicht rechtzeitig bestätigt. Es wurde keine zweite Anfrage gesendet."
+    },
+    "feedback_outcome_unknown": {
+      "message": "Die Rückmeldeanfrage könnte GroupAlarm erreicht haben, ihr Ergebnis konnte aber nicht bestätigt werden. Es wurde keine zweite Anfrage gesendet."
+    },
+    "feedback_superseded": {
+      "message": "Ein neuerer Alarm hat das Ziel ersetzt, bevor die Rückmeldung bestätigt werden konnte."
+    },
+    "feedback_conflict": {
+      "message": "GroupAlarm hat für diesen Alarm eine andere Antwort bestätigt."
+    },
+    "feedback_authentication": {
+      "message": "Der Personal Access Token wurde abgelehnt. Die erneute Authentifizierung wurde gestartet."
+    },
+    "feedback_permission": {
+      "message": "Das GroupAlarm-Konto darf diese Rückmeldung nicht senden."
+    },
+    "feedback_rate_limited": {
+      "message": "GroupAlarm begrenzt derzeit Rückmeldeanfragen. Versuche es später erneut."
+    },
+    "feedback_rejected": {
+      "message": "GroupAlarm hat die Rückmeldeanfrage abgelehnt."
+    },
+    "feedback_failed": {
+      "message": "Die Rückmeldeaktion ist sicher fehlgeschlagen. Es wurde keine unbestätigte Ersatzanfrage gesendet."
+    },
+    "feedback_sent_without_duration": {
+      "message": "Rückmeldung wurde gesendet, die Anfahrtszeit konnte jedoch nicht übertragen werden."
+    },
+    "feedback_duration_unverified": {
+      "message": "Die Rückmeldung wurde bestätigt, die Übertragung der Anfahrtszeit konnte jedoch nicht verifiziert werden."
+    }
+  },
   "entity": {
     "binary_sensor": {
       "active_alert": {
         "name": "Aktive Alarmierung"
+      }
+    },
+    "button": {
+      "feedback_positive": {
+        "name": "Komme"
+      },
+      "feedback_negative": {
+        "name": "Komme nicht"
       }
     },
     "device_tracker": {

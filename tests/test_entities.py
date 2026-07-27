@@ -169,7 +169,7 @@ async def test_setup_creates_stable_devices_and_read_entities(
     entity_registry = er.async_get(hass)
     device_registry = dr.async_get(hass)
     entries = er.async_entries_for_config_entry(entity_registry, entry.entry_id)
-    assert len(entries) == 24
+    assert len(entries) == 28
 
     for organization_id, expected_name in ((7, "Alpha"), (12, "Bravo")):
         device = device_registry.async_get_device(
@@ -200,6 +200,15 @@ async def test_setup_creates_stable_devices_and_read_entities(
         )
         assert feedback_entity_id is not None
         assert hass.states.get(feedback_entity_id).state == "unknown"
+
+        for button_key in ("feedback_komme", "feedback_komme_nicht"):
+            button_entity_id = entity_registry.async_get_entity_id(
+                "button",
+                DOMAIN,
+                build_entity_unique_id(41, organization_id, button_key),
+            )
+            assert button_entity_id is not None
+            assert hass.states.get(button_entity_id).state == STATE_UNAVAILABLE
 
         activity_entity_id = entity_registry.async_get_entity_id(
             "binary_sensor",
@@ -312,6 +321,14 @@ async def test_registry_migration_preserves_selected_and_removes_stale(
         device_id=selected_device.id,
         suggested_object_id="legacy_selected",
     )
+    selected_button = entity_registry.async_get_or_create(
+        "button",
+        DOMAIN,
+        f"{entry.entry_id}_7_feedback_komme",
+        config_entry=entry,
+        device_id=selected_device.id,
+        suggested_object_id="legacy_feedback",
+    )
     stale_entity = entity_registry.async_get_or_create(
         "sensor",
         DOMAIN,
@@ -331,6 +348,13 @@ async def test_registry_migration_preserves_selected_and_removes_stale(
     migrated = entity_registry.async_get(selected_entity.entity_id)
     assert migrated is not None
     assert migrated.unique_id == build_entity_unique_id(41, 7, "alarm_id")
+    migrated_button = entity_registry.async_get(selected_button.entity_id)
+    assert migrated_button is not None
+    assert migrated_button.unique_id == build_entity_unique_id(
+        41,
+        7,
+        "feedback_komme",
+    )
     assert entity_registry.async_get(stale_entity.entity_id) is None
 
     selected_after = device_registry.async_get(selected_device.id)

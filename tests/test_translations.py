@@ -28,8 +28,26 @@ def test_translation_key_parity() -> None:
     }
     assert set(english["entity"]) == {
         "binary_sensor",
+        "button",
         "device_tracker",
         "sensor",
+    }
+    assert set(english["exceptions"]) == {
+        "feedback_authentication",
+        "feedback_busy",
+        "feedback_configuration",
+        "feedback_conflict",
+        "feedback_duration_unverified",
+        "feedback_failed",
+        "feedback_not_confirmed",
+        "feedback_outcome_unknown",
+        "feedback_pending",
+        "feedback_permission",
+        "feedback_rate_limited",
+        "feedback_rejected",
+        "feedback_sent_without_duration",
+        "feedback_superseded",
+        "feedback_unavailable",
     }
 
 

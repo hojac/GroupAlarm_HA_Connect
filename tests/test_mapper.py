@@ -233,11 +233,62 @@ def test_personal_feedback_requires_exact_server_confirmation(
     )
 
     assert alarm.personal_feedback is expected
+    assert alarm.personal_feedback_duration is None
     assert alarm.deadline_status is (
         DeadlineStatus.ANSWERED
         if expected in (PersonalFeedback.POSITIVE, PersonalFeedback.NEGATIVE)
         else DeadlineStatus.UNKNOWN
     )
+
+
+def test_personal_feedback_duration_uses_only_matching_confirmed_record() -> None:
+    alarm = normalize_alarm(
+        _detail(
+            feedback=[
+                {
+                    "alarmID": 11,
+                    "userID": 99,
+                    "state": "RESPONDED",
+                    "feedback": True,
+                    "userDuration": 90,
+                },
+                {
+                    "alarmID": 11,
+                    "userID": 41,
+                    "state": "RESPONDED",
+                    "feedback": True,
+                    "userDuration": 12,
+                },
+            ]
+        ),
+        alarm_id=11,
+        organization_id=7,
+        user_id=41,
+    )
+
+    assert alarm.personal_feedback is PersonalFeedback.POSITIVE
+    assert alarm.personal_feedback_duration == 12
+
+
+@pytest.mark.parametrize("duration", [True, -1, "12"])
+def test_invalid_confirmed_personal_duration_is_rejected(duration: object) -> None:
+    with pytest.raises(GroupAlarmResponseError):
+        normalize_alarm(
+            _detail(
+                feedback=[
+                    {
+                        "alarmID": 11,
+                        "userID": 41,
+                        "state": "RESPONDED",
+                        "feedback": True,
+                        "userDuration": duration,
+                    }
+                ]
+            ),
+            alarm_id=11,
+            organization_id=7,
+            user_id=41,
+        )
 
 
 def test_normalizer_does_not_invent_blocked_semantics() -> None:
