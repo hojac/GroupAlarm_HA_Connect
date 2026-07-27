@@ -16,6 +16,7 @@ from custom_components.groupalarm_ha_connect import (
 )
 from custom_components.groupalarm_ha_connect.api import (
     GroupAlarmAuthenticationError,
+    GroupAlarmOrganization,
     GroupAlarmTransportError,
     GroupAlarmUser,
 )
@@ -64,15 +65,33 @@ async def test_setup_uses_runtime_data_and_backfills_identity(
         },
         unique_id=None,
     )
-    with patch(
-        "custom_components.groupalarm_ha_connect."
-        "GroupAlarmClient.async_get_current_user",
-        new_callable=AsyncMock,
-        return_value=GroupAlarmUser(id=41),
+    with (
+        patch(
+            "custom_components.groupalarm_ha_connect."
+            "GroupAlarmClient.async_get_current_user",
+            new_callable=AsyncMock,
+            return_value=GroupAlarmUser(id=41),
+        ),
+        patch(
+            "custom_components.groupalarm_ha_connect."
+            "GroupAlarmClient.async_get_organizations",
+            new_callable=AsyncMock,
+            return_value=(GroupAlarmOrganization(id=7, name="Alpha"),),
+        ),
+        patch(
+            "custom_components.groupalarm_ha_connect."
+            "GroupAlarmCoordinator.async_config_entry_first_refresh",
+            new_callable=AsyncMock,
+        ),
+        patch(
+            "homeassistant.config_entries.ConfigEntries.async_forward_entry_setups",
+            new_callable=AsyncMock,
+        ),
     ):
         assert await async_setup_entry(hass, entry) is True
 
     assert entry.runtime_data.user.id == 41
+    assert entry.runtime_data.coordinator.user.id == 41
     assert entry.data[CONF_USER_ID] == 41
     assert entry.unique_id == "user_41_organizations_7"
 

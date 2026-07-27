@@ -2,12 +2,20 @@
 
 from __future__ import annotations
 
+from datetime import timedelta
 from typing import Final
+
+from homeassistant.const import Platform
 
 DOMAIN: Final = "groupalarm_ha_connect"
 BASE_URL: Final = "https://app.groupalarm.com/api/v1"
 
 CONFIG_ENTRY_VERSION: Final = 3
+PLATFORMS: Final = (
+    Platform.BINARY_SENSOR,
+    Platform.DEVICE_TRACKER,
+    Platform.SENSOR,
+)
 
 CONF_USER_ID: Final = "user_id"
 CONF_ORGANIZATION_IDS: Final = "organization_ids"
@@ -28,3 +36,7 @@ MIN_ARRIVAL_DURATION: Final = 1
 MAX_ARRIVAL_DURATION: Final = 180
 
 REQUEST_TIMEOUT_SECONDS: Final = 30.0
+
+ALARM_GATE_LIMIT: Final = 10
+MAX_PARALLEL_ORGANIZATIONS: Final = 4
+DETAIL_SAFETY_REFRESH: Final = timedelta(minutes=15)

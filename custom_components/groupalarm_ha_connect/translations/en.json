@@ -111,5 +111,55 @@
     "abort": {
       "invalid_auth": "The config entry does not contain usable credentials."
     }
+  },
+  "entity": {
+    "binary_sensor": {
+      "active_alert": {
+        "name": "Active alarm"
+      }
+    },
+    "device_tracker": {
+      "incident_location": {
+        "name": "Incident location"
+      }
+    },
+    "sensor": {
+      "alarm_id": {
+        "name": "Alarm ID"
+      },
+      "message": {
+        "name": "Incident message"
+      },
+      "start": {
+        "name": "Alarm start"
+      },
+      "alarm_time": {
+        "name": "Alarm time"
+      },
+      "event": {
+        "name": "Incident number"
+      },
+      "feedback_positive": {
+        "name": "Positive feedback"
+      },
+      "feedback_negative": {
+        "name": "Negative feedback"
+      },
+      "feedback_unknown": {
+        "name": "Pending feedback"
+      },
+      "my_feedback": {
+        "name": "My feedback",
+        "state": {
+          "no_alarm": "No alarm",
+          "unknown": "Unknown",
+          "komme": "Coming",
+          "komme_nicht": "Not coming"
+        }
+      },
+      "user_id": {
+        "name": "User ID"
+      }
+    }
   }
 }

@@ -127,7 +127,8 @@ Forbidden deadline inputs:
 
 1. Load user identity once.
 2. Resolve configured organization identities.
-3. Load/cache organization timeout.
+3. Load/cache organization timeout once its reference semantics are proven
+   (deferred in Phase 2 to avoid unused traffic).
 4. Load a sufficiently safe alarm-list window.
 5. Select a validated candidate only under the ordering policy documented in
    `api-contract.md`.
@@ -147,6 +148,11 @@ Forbidden deadline inputs:
 This handles a new alarm by ID while still detecting close/aggregate changes
 at the same ID. It does not claim that `limit=1` is safe before list ordering is
 proven.
+
+Phase 2 implements this with a bounded ten-entry list page and a 15-minute
+canonical-detail safety refresh. The selector is deterministic within the
+page, but the first page is not claimed to contain the globally newest alarm
+until real payloads prove server ordering.
 
 ### Feedback transition
 
@@ -185,6 +191,23 @@ Location normalization is optional:
 - never invent `0,0` or reuse stale coordinates for a new alarm;
 - allow address and coordinates to be absent;
 - do not include raw address, coordinates or alarm content in diagnostics.
+
+Phase 2 creates the location tracker identity but keeps it unavailable. The
+official `optionalContent` schema is untyped and no anonymized real location
+fixture has yet proven its JSON paths. The legacy integration's fallback paths
+are therefore not copied into the normalizer.
+
+## Phase 2 read model
+
+The implemented read-only entity set currently exposes alarm ID, message,
+start timestamp, compatibility alarm time, event name, aggregate feedback
+counts, server-confirmed personal feedback, and a disabled-by-default user-ID
+diagnostic sensor. Activity remains an unknown binary-sensor state, and the
+location tracker remains unavailable, until their source mappings are proven.
+
+Deadline-end, deadline-status and countdown entities remain deferred to Phase
+4. Buttons remain deferred to Phase 3 because feedback eligibility is still
+unknown and fail-safe button availability requires `open`.
 
 ## Availability and error model
 

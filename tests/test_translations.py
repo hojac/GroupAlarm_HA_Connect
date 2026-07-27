@@ -20,6 +20,17 @@ def test_translation_key_parity() -> None:
     german = json.loads((INTEGRATION / "translations" / "de.json").read_text())
 
     assert _translation_shape(english) == _translation_shape(german)
+    assert set(english["entity"]["sensor"]["my_feedback"]["state"]) == {
+        "no_alarm",
+        "unknown",
+        "komme",
+        "komme_nicht",
+    }
+    assert set(english["entity"]) == {
+        "binary_sensor",
+        "device_tracker",
+        "sensor",
+    }
 
 
 def test_version_and_minimum_home_assistant_are_consistent() -> None:

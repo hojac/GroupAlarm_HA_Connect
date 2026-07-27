@@ -6,12 +6,15 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_TOKEN
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryAuthFailed, ConfigEntryNotReady
+from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .api import (
     GroupAlarmAuthenticationError,
     GroupAlarmClient,
     GroupAlarmError,
+    GroupAlarmOrganization,
     GroupAlarmPermissionError,
 )
 from .const import (
@@ -23,14 +26,149 @@ from .const import (
     CONF_USER_ID,
     CONFIG_ENTRY_VERSION,
     DEFAULT_SCAN_INTERVAL,
+    DOMAIN,
     LEGACY_CONF_ORGANIZATION_ID,
     LEGACY_CONF_PAT,
     MAX_ARRIVAL_DURATION,
     MAX_SCAN_INTERVAL,
     MIN_ARRIVAL_DURATION,
     MIN_SCAN_INTERVAL,
+    PLATFORMS,
 )
-from .models import GroupAlarmConfigEntry, GroupAlarmRuntimeData, build_entry_unique_id
+from .coordinator import GroupAlarmCoordinator
+from .models import (
+    GroupAlarmConfigEntry,
+    GroupAlarmRuntimeData,
+    build_device_identifier,
+    build_entity_unique_id,
+    build_entry_unique_id,
+)
+
+
+def _organization_names(
+    entry: GroupAlarmConfigEntry,
+    organizations: tuple[GroupAlarmOrganization, ...],
+) -> dict[int, str]:
+    """Resolve current names while retaining inaccessible configured scopes."""
+    current = {organization.id: organization.name for organization in organizations}
+    stored = entry.data.get(CONF_ORGANIZATION_NAMES, {})
+    stored_names = stored if isinstance(stored, dict) else {}
+    return {
+        organization_id: current.get(
+            organization_id,
+            str(
+                stored_names.get(
+                    str(organization_id),
+                    stored_names.get(organization_id, organization_id),
+                )
+            ),
+        )
+        for organization_id in sorted(
+            {int(value) for value in entry.data[CONF_ORGANIZATION_IDS]}
+        )
+    }
+
+
+def _registry_organization_id(
+    identifier: str,
+    *,
+    entry_id: str,
+    user_id: int,
+) -> tuple[int, str] | None:
+    """Parse a legacy or current entity unique ID owned by this entry."""
+    legacy_prefix = f"{entry_id}_"
+    current_prefix = f"user_{user_id}_organization_"
+    if identifier.startswith(legacy_prefix):
+        remainder = identifier.removeprefix(legacy_prefix)
+    elif identifier.startswith(current_prefix):
+        remainder = identifier.removeprefix(current_prefix)
+    else:
+        return None
+    organization, separator, entity_key = remainder.partition("_")
+    if not separator or not organization.isdigit() or not entity_key:
+        return None
+    organization_id = int(organization)
+    if organization_id < 1:
+        return None
+    return organization_id, entity_key
+
+
+def _migrate_registries(
+    hass: HomeAssistant,
+    entry: GroupAlarmConfigEntry,
+    *,
+    user_id: int,
+    organization_ids: set[int],
+) -> None:
+    """Migrate legacy identities and remove stale organization records."""
+    entity_registry = er.async_get(hass)
+    for registry_entry in er.async_entries_for_config_entry(
+        entity_registry,
+        entry.entry_id,
+    ):
+        parsed = _registry_organization_id(
+            registry_entry.unique_id,
+            entry_id=entry.entry_id,
+            user_id=user_id,
+        )
+        if parsed is None:
+            continue
+        organization_id, entity_key = parsed
+        if organization_id not in organization_ids:
+            entity_registry.async_remove(registry_entry.entity_id)
+            continue
+        new_unique_id = build_entity_unique_id(
+            user_id,
+            organization_id,
+            entity_key,
+        )
+        if registry_entry.unique_id == new_unique_id:
+            continue
+        duplicate = entity_registry.async_get_entity_id(
+            registry_entry.domain,
+            DOMAIN,
+            new_unique_id,
+        )
+        if duplicate is not None and duplicate != registry_entry.entity_id:
+            entity_registry.async_remove(registry_entry.entity_id)
+            continue
+        entity_registry.async_update_entity(
+            registry_entry.entity_id,
+            new_unique_id=new_unique_id,
+        )
+
+    device_registry = dr.async_get(hass)
+    current_device_prefix = f"user_{user_id}_organization_"
+    for device in dr.async_entries_for_config_entry(device_registry, entry.entry_id):
+        device_organization_id: int | None = None
+        for domain, identifier in device.identifiers:
+            if domain != DOMAIN:
+                continue
+            if identifier.isdigit():
+                device_organization_id = int(identifier)
+            elif identifier.startswith(current_device_prefix):
+                raw_id = identifier.removeprefix(current_device_prefix)
+                if raw_id.isdigit():
+                    device_organization_id = int(raw_id)
+            if device_organization_id is not None:
+                break
+        if device_organization_id is None:
+            continue
+        if device_organization_id not in organization_ids:
+            device_registry.async_update_device(
+                device.id,
+                remove_config_entry_id=entry.entry_id,
+            )
+            continue
+        device_registry.async_update_device(
+            device.id,
+            new_identifiers={
+                (
+                    DOMAIN,
+                    build_device_identifier(user_id, device_organization_id),
+                )
+            },
+        )
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: GroupAlarmConfigEntry) -> bool:
@@ -53,22 +191,77 @@ async def async_setup_entry(hass: HomeAssistant, entry: GroupAlarmConfigEntry) -
             "The GroupAlarm token belongs to a different account"
         )
 
-    organization_ids = tuple(entry.data[CONF_ORGANIZATION_IDS])
+    try:
+        organizations = await client.async_get_organizations()
+    except (GroupAlarmAuthenticationError, GroupAlarmPermissionError) as err:
+        raise ConfigEntryAuthFailed("GroupAlarm credentials were rejected") from err
+    except GroupAlarmError as err:
+        raise ConfigEntryNotReady("Unable to connect to GroupAlarm") from err
+
+    organization_ids = tuple(
+        sorted({int(value) for value in entry.data[CONF_ORGANIZATION_IDS]})
+    )
     expected_unique_id = build_entry_unique_id(user.id, organization_ids)
-    if stored_user_id != user.id or entry.unique_id != expected_unique_id:
+    names = _organization_names(entry, organizations)
+    serialized_names = {
+        str(organization_id): name for organization_id, name in names.items()
+    }
+    if (
+        stored_user_id != user.id
+        or entry.unique_id != expected_unique_id
+        or entry.data.get(CONF_ORGANIZATION_NAMES) != serialized_names
+    ):
         hass.config_entries.async_update_entry(
             entry,
-            data={**entry.data, CONF_USER_ID: user.id},
+            data={
+                **entry.data,
+                CONF_USER_ID: user.id,
+                CONF_ORGANIZATION_NAMES: serialized_names,
+            },
             unique_id=expected_unique_id,
         )
 
-    entry.runtime_data = GroupAlarmRuntimeData(client=client, user=user)
+    scan_interval = int(entry.options.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL))
+    coordinator = GroupAlarmCoordinator(
+        hass,
+        entry,
+        client,
+        user,
+        names,
+        scan_interval,
+    )
+    await coordinator.async_config_entry_first_refresh()
+
+    _migrate_registries(
+        hass,
+        entry,
+        user_id=user.id,
+        organization_ids=set(organization_ids),
+    )
+    entry.runtime_data = GroupAlarmRuntimeData(
+        client=client,
+        user=user,
+        coordinator=coordinator,
+    )
+    entry.async_on_unload(entry.add_update_listener(_async_reload_entry))
+    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     return True
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: GroupAlarmConfigEntry) -> bool:
     """Unload a GroupAlarm config entry."""
-    return True
+    unloaded = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+    if unloaded:
+        await entry.runtime_data.coordinator.async_shutdown()
+    return unloaded
+
+
+async def _async_reload_entry(
+    hass: HomeAssistant,
+    entry: GroupAlarmConfigEntry,
+) -> None:
+    """Reload after an external config-entry update."""
+    await hass.config_entries.async_reload(entry.entry_id)
 
 
 async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:

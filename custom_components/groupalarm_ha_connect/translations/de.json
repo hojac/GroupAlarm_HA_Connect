@@ -111,5 +111,55 @@
     "abort": {
       "invalid_auth": "Der Konfigurationseintrag enthält keine verwendbaren Zugangsdaten."
     }
+  },
+  "entity": {
+    "binary_sensor": {
+      "active_alert": {
+        "name": "Aktive Alarmierung"
+      }
+    },
+    "device_tracker": {
+      "incident_location": {
+        "name": "Einsatzort"
+      }
+    },
+    "sensor": {
+      "alarm_id": {
+        "name": "Alarm ID"
+      },
+      "message": {
+        "name": "Einsatzmeldung"
+      },
+      "start": {
+        "name": "Alarmierung Start"
+      },
+      "alarm_time": {
+        "name": "Alarmzeitpunkt"
+      },
+      "event": {
+        "name": "Einsatznummer"
+      },
+      "feedback_positive": {
+        "name": "Rückmeldungen positiv"
+      },
+      "feedback_negative": {
+        "name": "Rückmeldungen negativ"
+      },
+      "feedback_unknown": {
+        "name": "Rückmeldungen offen"
+      },
+      "my_feedback": {
+        "name": "Meine Rückmeldung",
+        "state": {
+          "no_alarm": "Kein Alarm",
+          "unknown": "Unbekannt",
+          "komme": "Komme",
+          "komme_nicht": "Komme nicht"
+        }
+      },
+      "user_id": {
+        "name": "Benutzer-ID"
+      }
+    }
   }
 }

@@ -293,6 +293,37 @@ choose one of these evidence-backed variants:
 No currently documented endpoint permits a correct ID-only poll. This is an
 explicit API limitation, not a reason to guess.
 
+### Phase 2 implementation policy
+
+The initial implementation uses one `limit=10, offset=0` gate request per
+configured organization and polling interval. It validates every returned
+candidate and selects the maximum `(startDate, id)` pair within that bounded
+page. Ten entries are a deliberate compromise: the response remains small,
+while out-of-order entries inside the first page do not make `limit=1` choose
+the wrong candidate.
+
+This does **not** turn the undocumented server ordering into a guarantee. If
+an organization has more than ten alarms, the API contract still cannot prove
+that the newest alarm is present in the first page. Real list fixtures are
+still required to establish the observed ordering policy.
+
+After initial detail loading, unchanged alarm ID and revision reuse the
+normalized canonical detail. A detail request is made only for:
+
+- a new selected alarm ID;
+- a changed documented list fingerprint for the same ID; or
+- a safety refresh after 15 minutes.
+
+The setup path loads the user and accessible organizations once per config
+entry. Organization names are refreshed there, not during alarm polling.
+`DataUpdateCoordinator(always_update=False)` suppresses entity callbacks when
+the immutable normalized snapshots compare equal.
+
+The organization timeout is not requested in Phase 2 because no proven
+reference timestamp currently turns that duration into a deadline or
+eligibility decision. It will be loaded and cached when Phase 4 can consume it
+without creating unused setup traffic.
+
 ## Feedback delivery and reconciliation
 
 Each alarm/organization has one asynchronous send lock.
