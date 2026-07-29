@@ -1,0 +1,861 @@
+{
+	"id": 6398083,
+	"message": "KBM-Sammel:  # Mozartstraße  27 # ELLEN # PE1 R1_N1 # Maschine,unt hoftrack\n\n",
+	"mode": "best-effort",
+	"startDate": "2026-07-27T09:17:56.604Z",
+	"endDate": "2026-07-27T09:23:03.866Z",
+	"event": {
+		"id": 6579609,
+		"name": "1260041611",
+		"startDate": "2026-07-27T09:17:56.604Z",
+		"endDate": "2026-07-27T09:33:01.58Z",
+		"organizationID": 2035,
+		"archived": false,
+		"abort": null,
+		"severity": null
+	},
+	"organizationID": 2035,
+	"alarmResources": {
+		"scenarios": [
+			{
+				"id": 4581,
+				"name": "KBM ALARM",
+				"description": "KBM ALARM",
+				"units": [
+					{
+						"id": 4711,
+						"organizationID": 2035,
+						"name": "KBM Team",
+						"description": "Kreisbrandmeisterei",
+						"categoryID": null,
+						"isLocked": false,
+						"unitParts": [
+							{
+								"id": 7576,
+								"label": {
+									"id": 3797,
+									"organizationID": 2035,
+									"name": "KBM TEAM",
+									"description": "Kreisbrandmeisterei",
+									"color": "#ffff00",
+									"assignees": [
+										1459,
+										11348,
+										12859,
+										3601,
+										12906
+									],
+									"pauseableUsers": null,
+									"substitute": null,
+									"priority": 0,
+									"minimumUsers": null,
+									"availableUsers": null,
+									"smartLabelConfiguration": null
+								},
+								"amount": -1,
+								"unitID": 4711,
+								"userID": 0,
+								"isSubstitute": false,
+								"substitutedAmount": 0
+							}
+						],
+						"externalID": null,
+						"status": null,
+						"position": null
+					}
+				],
+				"organizationID": 2035,
+				"sendPosition": false,
+				"instructionCatalogID": 0,
+				"tags": {
+					"triggered_by": [
+						{
+							"id": 2290,
+							"organization_id": 553,
+							"name": "DN_IUK-Gruppe",
+							"description": "IUK Gruppe 2290",
+							"color": "#000000",
+							"protected": false,
+							"date_create": "2020-09-04T05:24:14.694Z",
+							"date_edit": "2023-03-25T14:34:05.597Z",
+							"organization": {
+								"id": 553,
+								"parentID": 0,
+								"name": "Gesamt Kreis Düren",
+								"description": "Kreis Düren",
+								"ownerIDs": null,
+								"state": "",
+								"tags": null,
+								"avatarURL": "https://storage.googleapis.com/groupalarm-avatars-organization-production/avatar-553-5FQxZyUX.png",
+								"timezone": "Europe/Berlin",
+								"language": "de",
+								"enforcesTwoFactorAuth": false,
+								"dataRetentionPeriod": 0
+							},
+							"scenarios": {
+								"triggered_by": [
+									{
+										"organization": {
+											"id": 2035,
+											"parentID": 2034,
+											"name": "DN AMT38  KBM",
+											"description": "Kreisbrandmeisterei",
+											"ownerIDs": [
+												1441,
+												3569,
+												1482,
+												10926,
+												96295
+											],
+											"state": "active",
+											"tags": [],
+											"avatarURL": "https://storage.googleapis.com/groupalarm-avatars-organization-production/avatar-2035-dRvdCbKy.png",
+											"timezone": "Europe/Berlin",
+											"language": "de",
+											"enforcesTwoFactorAuth": false,
+											"dataRetentionPeriod": 0
+										},
+										"scenario": {
+											"id": 4581,
+											"name": "KBM ALARM",
+											"description": "KBM ALARM",
+											"units": null,
+											"organizationID": 2035,
+											"sendPosition": false,
+											"instructionCatalogID": 0,
+											"tags": {
+												"triggered_by": null,
+												"triggering": null
+											},
+											"isLocked": false
+										}
+									},
+									{
+										"organization": {
+											"id": 6144,
+											"parentID": 2030,
+											"name": "DN  RDKD",
+											"description": "Rettungsdienst Kreis Düren AöR",
+											"ownerIDs": [
+												1441,
+												3569,
+												1482,
+												10926,
+												96295,
+												17258,
+												17259
+											],
+											"state": "active",
+											"tags": [],
+											"avatarURL": "https://storage.googleapis.com/groupalarm-avatars-organization-production/avatar-6144-pNaEzE4I.png",
+											"timezone": "Europe/Berlin",
+											"language": "de",
+											"enforcesTwoFactorAuth": false,
+											"dataRetentionPeriod": 0
+										},
+										"scenario": {
+											"id": 9667,
+											"name": "Info-RD",
+											"description": "Info-RD",
+											"units": null,
+											"organizationID": 6144,
+											"sendPosition": false,
+											"instructionCatalogID": 0,
+											"tags": {
+												"triggered_by": null,
+												"triggering": null
+											},
+											"isLocked": false
+										}
+									},
+									{
+										"organization": {
+											"id": 6152,
+											"parentID": 6142,
+											"name": "DN IuK-Gruppe",
+											"description": "IuK Kreis Düren",
+											"ownerIDs": [
+												1441,
+												3569,
+												1482,
+												10926,
+												96295
+											],
+											"state": "active",
+											"tags": [],
+											"avatarURL": "https://storage.googleapis.com/groupalarm-avatars-organization-production/avatar-6152-Kjk9zd4W.png",
+											"timezone": "Europe/Berlin",
+											"language": "de",
+											"enforcesTwoFactorAuth": false,
+											"dataRetentionPeriod": 0
+										},
+										"scenario": {
+											"id": 7121,
+											"name": "DN_IUK Gruppe",
+											"description": "DN_IUK Gruppe",
+											"units": null,
+											"organizationID": 6152,
+											"sendPosition": false,
+											"instructionCatalogID": 0,
+											"tags": {
+												"triggered_by": null,
+												"triggering": null
+											},
+											"isLocked": false
+										}
+									},
+									{
+										"organization": {
+											"id": 7419,
+											"parentID": 6144,
+											"name": "RDKD Führungsdienst",
+											"description": "Führungsdienst",
+											"ownerIDs": [
+												3569,
+												1441,
+												1482,
+												10926,
+												96295,
+												17258,
+												17259
+											],
+											"state": "active",
+											"tags": [],
+											"avatarURL": "https://storage.googleapis.com/groupalarm-avatars-organization-production/avatar-7419-Nze3jQHc.png",
+											"timezone": "Europe/Berlin",
+											"language": "de",
+											"enforcesTwoFactorAuth": false,
+											"dataRetentionPeriod": 0
+										},
+										"scenario": {
+											"id": 43577,
+											"name": "RDKD Info",
+											"description": "",
+											"units": null,
+											"organizationID": 7419,
+											"sendPosition": false,
+											"instructionCatalogID": 0,
+											"tags": {
+												"triggered_by": null,
+												"triggering": null
+											},
+											"isLocked": false
+										}
+									},
+									{
+										"organization": {
+											"id": 10387,
+											"parentID": 6079,
+											"name": "DÜR Info",
+											"description": "DÜR Info",
+											"ownerIDs": [
+												3569,
+												1441,
+												1482,
+												10926,
+												96295
+											],
+											"state": "active",
+											"tags": [],
+											"avatarURL": "",
+											"timezone": "Europe/Berlin",
+											"language": "de",
+											"enforcesTwoFactorAuth": false,
+											"dataRetentionPeriod": 0
+										},
+										"scenario": {
+											"id": 13264,
+											"name": "Info DÜR",
+											"description": "Info DÜR",
+											"units": null,
+											"organizationID": 10387,
+											"sendPosition": false,
+											"instructionCatalogID": 0,
+											"tags": {
+												"triggered_by": null,
+												"triggering": null
+											},
+											"isLocked": false
+										}
+									},
+									{
+										"organization": {
+											"id": 10387,
+											"parentID": 6079,
+											"name": "DÜR Info",
+											"description": "DÜR Info",
+											"ownerIDs": [
+												3569,
+												1441,
+												1482,
+												10926,
+												96295
+											],
+											"state": "active",
+											"tags": [],
+											"avatarURL": "",
+											"timezone": "Europe/Berlin",
+											"language": "de",
+											"enforcesTwoFactorAuth": false,
+											"dataRetentionPeriod": 0
+										},
+										"scenario": {
+											"id": 34589,
+											"name": "IUK INFO",
+											"description": "IUK INFO",
+											"units": null,
+											"organizationID": 10387,
+											"sendPosition": false,
+											"instructionCatalogID": 0,
+											"tags": {
+												"triggered_by": null,
+												"triggering": null
+											},
+											"isLocked": false
+										}
+									},
+									{
+										"organization": {
+											"id": 23122,
+											"parentID": 5825,
+											"name": "KRZ Info",
+											"description": "KRZ Info",
+											"ownerIDs": [
+												3569,
+												1441,
+												1482,
+												10926,
+												96295
+											],
+											"state": "active",
+											"tags": [],
+											"avatarURL": "",
+											"timezone": "Europe/Berlin",
+											"language": "de",
+											"enforcesTwoFactorAuth": false,
+											"dataRetentionPeriod": 0
+										},
+										"scenario": {
+											"id": 34130,
+											"name": "KRZ Info",
+											"description": "KRZ Info",
+											"units": null,
+											"organizationID": 23122,
+											"sendPosition": false,
+											"instructionCatalogID": 0,
+											"tags": {
+												"triggered_by": null,
+												"triggering": null
+											},
+											"isLocked": false
+										}
+									}
+								],
+								"triggering": []
+							},
+							"alarm_resource_templates": [],
+							"allowed_organizations": [
+								2030,
+								10387,
+								23122
+							]
+						},
+						{
+							"id": 2014,
+							"organization_id": 553,
+							"name": "DN_KBM-SA",
+							"description": "KBM Sammel 2014",
+							"color": "#000000",
+							"protected": false,
+							"date_create": "2020-08-14T07:56:15.842Z",
+							"date_edit": "2021-01-22T20:15:32.848Z",
+							"organization": {
+								"id": 553,
+								"parentID": 0,
+								"name": "Gesamt Kreis Düren",
+								"description": "Kreis Düren",
+								"ownerIDs": null,
+								"state": "",
+								"tags": null,
+								"avatarURL": "https://storage.googleapis.com/groupalarm-avatars-organization-production/avatar-553-5FQxZyUX.png",
+								"timezone": "Europe/Berlin",
+								"language": "de",
+								"enforcesTwoFactorAuth": false,
+								"dataRetentionPeriod": 0
+							},
+							"scenarios": {
+								"triggered_by": [
+									{
+										"organization": {
+											"id": 2034,
+											"parentID": 2030,
+											"name": "DN AMT 38",
+											"description": "AMT38",
+											"ownerIDs": [
+												1441,
+												3569,
+												1482,
+												10926,
+												96295
+											],
+											"state": "active",
+											"tags": [],
+											"avatarURL": "https://storage.googleapis.com/groupalarm-avatars-organization-production/avatar-2034-NNLKNrYk.png",
+											"timezone": "Europe/Berlin",
+											"language": "de",
+											"enforcesTwoFactorAuth": false,
+											"dataRetentionPeriod": 0
+										},
+										"scenario": {
+											"id": 9720,
+											"name": "Info",
+											"description": "Info",
+											"units": null,
+											"organizationID": 2034,
+											"sendPosition": false,
+											"instructionCatalogID": 0,
+											"tags": {
+												"triggered_by": null,
+												"triggering": null
+											},
+											"isLocked": false
+										}
+									},
+									{
+										"organization": {
+											"id": 2035,
+											"parentID": 2034,
+											"name": "DN AMT38  KBM",
+											"description": "Kreisbrandmeisterei",
+											"ownerIDs": [
+												1441,
+												3569,
+												1482,
+												10926,
+												96295
+											],
+											"state": "active",
+											"tags": [],
+											"avatarURL": "https://storage.googleapis.com/groupalarm-avatars-organization-production/avatar-2035-dRvdCbKy.png",
+											"timezone": "Europe/Berlin",
+											"language": "de",
+											"enforcesTwoFactorAuth": false,
+											"dataRetentionPeriod": 0
+										},
+										"scenario": {
+											"id": 4581,
+											"name": "KBM ALARM",
+											"description": "KBM ALARM",
+											"units": null,
+											"organizationID": 2035,
+											"sendPosition": false,
+											"instructionCatalogID": 0,
+											"tags": {
+												"triggered_by": null,
+												"triggering": null
+											},
+											"isLocked": false
+										}
+									}
+								],
+								"triggering": []
+							},
+							"alarm_resource_templates": [],
+							"allowed_organizations": [
+								2761,
+								2034
+							]
+						},
+						{
+							"id": 3372,
+							"organization_id": 553,
+							"name": "DN_IUK-Drohne",
+							"description": "Drohneneinheit",
+							"color": "#000000",
+							"protected": false,
+							"date_create": "2020-11-23T09:49:33.174Z",
+							"date_edit": "2023-07-13T07:15:14.193Z",
+							"organization": {
+								"id": 553,
+								"parentID": 0,
+								"name": "Gesamt Kreis Düren",
+								"description": "Kreis Düren",
+								"ownerIDs": null,
+								"state": "",
+								"tags": null,
+								"avatarURL": "https://storage.googleapis.com/groupalarm-avatars-organization-production/avatar-553-5FQxZyUX.png",
+								"timezone": "Europe/Berlin",
+								"language": "de",
+								"enforcesTwoFactorAuth": false,
+								"dataRetentionPeriod": 0
+							},
+							"scenarios": {
+								"triggered_by": [
+									{
+										"organization": {
+											"id": 2035,
+											"parentID": 2034,
+											"name": "DN AMT38  KBM",
+											"description": "Kreisbrandmeisterei",
+											"ownerIDs": [
+												1441,
+												3569,
+												1482,
+												10926,
+												96295
+											],
+											"state": "active",
+											"tags": [],
+											"avatarURL": "https://storage.googleapis.com/groupalarm-avatars-organization-production/avatar-2035-dRvdCbKy.png",
+											"timezone": "Europe/Berlin",
+											"language": "de",
+											"enforcesTwoFactorAuth": false,
+											"dataRetentionPeriod": 0
+										},
+										"scenario": {
+											"id": 4581,
+											"name": "KBM ALARM",
+											"description": "KBM ALARM",
+											"units": null,
+											"organizationID": 2035,
+											"sendPosition": false,
+											"instructionCatalogID": 0,
+											"tags": {
+												"triggered_by": null,
+												"triggering": null
+											},
+											"isLocked": false
+										}
+									},
+									{
+										"organization": {
+											"id": 6144,
+											"parentID": 2030,
+											"name": "DN  RDKD",
+											"description": "Rettungsdienst Kreis Düren AöR",
+											"ownerIDs": [
+												1441,
+												3569,
+												1482,
+												10926,
+												96295,
+												17258,
+												17259
+											],
+											"state": "active",
+											"tags": [],
+											"avatarURL": "https://storage.googleapis.com/groupalarm-avatars-organization-production/avatar-6144-pNaEzE4I.png",
+											"timezone": "Europe/Berlin",
+											"language": "de",
+											"enforcesTwoFactorAuth": false,
+											"dataRetentionPeriod": 0
+										},
+										"scenario": {
+											"id": 9667,
+											"name": "Info-RD",
+											"description": "Info-RD",
+											"units": null,
+											"organizationID": 6144,
+											"sendPosition": false,
+											"instructionCatalogID": 0,
+											"tags": {
+												"triggered_by": null,
+												"triggering": null
+											},
+											"isLocked": false
+										}
+									},
+									{
+										"organization": {
+											"id": 7419,
+											"parentID": 6144,
+											"name": "RDKD Führungsdienst",
+											"description": "Führungsdienst",
+											"ownerIDs": [
+												3569,
+												1441,
+												1482,
+												10926,
+												96295,
+												17258,
+												17259
+											],
+											"state": "active",
+											"tags": [],
+											"avatarURL": "https://storage.googleapis.com/groupalarm-avatars-organization-production/avatar-7419-Nze3jQHc.png",
+											"timezone": "Europe/Berlin",
+											"language": "de",
+											"enforcesTwoFactorAuth": false,
+											"dataRetentionPeriod": 0
+										},
+										"scenario": {
+											"id": 43577,
+											"name": "RDKD Info",
+											"description": "",
+											"units": null,
+											"organizationID": 7419,
+											"sendPosition": false,
+											"instructionCatalogID": 0,
+											"tags": {
+												"triggered_by": null,
+												"triggering": null
+											},
+											"isLocked": false
+										}
+									},
+									{
+										"organization": {
+											"id": 9673,
+											"parentID": 6142,
+											"name": "DN Iuk-Drohne",
+											"description": "Iuk Drohneneinheit Kreis Düren",
+											"ownerIDs": [
+												3569,
+												1441,
+												1482,
+												10926,
+												96295
+											],
+											"state": "active",
+											"tags": [],
+											"avatarURL": "https://storage.googleapis.com/groupalarm-avatars-organization-production/avatar-9673-n9HFqz6y.png",
+											"timezone": "Europe/Berlin",
+											"language": "de",
+											"enforcesTwoFactorAuth": false,
+											"dataRetentionPeriod": 0
+										},
+										"scenario": {
+											"id": 12072,
+											"name": "DN IUK-Drohne",
+											"description": "DN IUK-Drohne",
+											"units": null,
+											"organizationID": 9673,
+											"sendPosition": false,
+											"instructionCatalogID": 0,
+											"tags": {
+												"triggered_by": null,
+												"triggering": null
+											},
+											"isLocked": false
+										}
+									},
+									{
+										"organization": {
+											"id": 10387,
+											"parentID": 6079,
+											"name": "DÜR Info",
+											"description": "DÜR Info",
+											"ownerIDs": [
+												3569,
+												1441,
+												1482,
+												10926,
+												96295
+											],
+											"state": "active",
+											"tags": [],
+											"avatarURL": "",
+											"timezone": "Europe/Berlin",
+											"language": "de",
+											"enforcesTwoFactorAuth": false,
+											"dataRetentionPeriod": 0
+										},
+										"scenario": {
+											"id": 13264,
+											"name": "Info DÜR",
+											"description": "Info DÜR",
+											"units": null,
+											"organizationID": 10387,
+											"sendPosition": false,
+											"instructionCatalogID": 0,
+											"tags": {
+												"triggered_by": null,
+												"triggering": null
+											},
+											"isLocked": false
+										}
+									},
+									{
+										"organization": {
+											"id": 10387,
+											"parentID": 6079,
+											"name": "DÜR Info",
+											"description": "DÜR Info",
+											"ownerIDs": [
+												3569,
+												1441,
+												1482,
+												10926,
+												96295
+											],
+											"state": "active",
+											"tags": [],
+											"avatarURL": "",
+											"timezone": "Europe/Berlin",
+											"language": "de",
+											"enforcesTwoFactorAuth": false,
+											"dataRetentionPeriod": 0
+										},
+										"scenario": {
+											"id": 34589,
+											"name": "IUK INFO",
+											"description": "IUK INFO",
+											"units": null,
+											"organizationID": 10387,
+											"sendPosition": false,
+											"instructionCatalogID": 0,
+											"tags": {
+												"triggered_by": null,
+												"triggering": null
+											},
+											"isLocked": false
+										}
+									},
+									{
+										"organization": {
+											"id": 23122,
+											"parentID": 5825,
+											"name": "KRZ Info",
+											"description": "KRZ Info",
+											"ownerIDs": [
+												3569,
+												1441,
+												1482,
+												10926,
+												96295
+											],
+											"state": "active",
+											"tags": [],
+											"avatarURL": "",
+											"timezone": "Europe/Berlin",
+											"language": "de",
+											"enforcesTwoFactorAuth": false,
+											"dataRetentionPeriod": 0
+										},
+										"scenario": {
+											"id": 34130,
+											"name": "KRZ Info",
+											"description": "KRZ Info",
+											"units": null,
+											"organizationID": 23122,
+											"sendPosition": false,
+											"instructionCatalogID": 0,
+											"tags": {
+												"triggered_by": null,
+												"triggering": null
+											},
+											"isLocked": false
+										}
+									}
+								],
+								"triggering": []
+							},
+							"alarm_resource_templates": [],
+							"allowed_organizations": [
+								10387,
+								23122,
+								2030
+							]
+						}
+					],
+					"triggering": []
+				},
+				"isLocked": false
+			}
+		],
+		"units": [],
+		"labels": [],
+		"users": []
+	},
+	"feedback": [
+		{
+			"alarmID": 6398083,
+			"userID": 3601,
+			"unitID": 4711,
+			"labelID": 3797,
+			"feedback": false,
+			"state": "TIMEDOUT",
+			"responseTime": "2026-07-27T09:22:58.452Z",
+			"userDistance": 0,
+			"userDuration": 0,
+			"userComment": null
+		},
+		{
+			"alarmID": 6398083,
+			"userID": 12906,
+			"unitID": 4711,
+			"labelID": 3797,
+			"feedback": false,
+			"state": "UNAVAILABLE",
+			"responseTime": "2026-07-27T09:17:57.098Z",
+			"userDistance": 0,
+			"userDuration": 0,
+			"userComment": null
+		},
+		{
+			"alarmID": 6398083,
+			"userID": 1459,
+			"unitID": 4711,
+			"labelID": 3797,
+			"feedback": false,
+			"state": "UNAVAILABLE",
+			"responseTime": "2026-07-27T09:17:57.095Z",
+			"userDistance": 0,
+			"userDuration": 0,
+			"userComment": null
+		},
+		{
+			"alarmID": 6398083,
+			"userID": 12859,
+			"unitID": 4711,
+			"labelID": 3797,
+			"feedback": false,
+			"state": "RESPONDED",
+			"responseTime": "2026-07-27T09:18:08.963Z",
+			"userDistance": 0,
+			"userDuration": 0,
+			"userComment": null
+		},
+		{
+			"alarmID": 6398083,
+			"userID": 11348,
+			"unitID": 4711,
+			"labelID": 3797,
+			"feedback": false,
+			"state": "RESPONDED",
+			"responseTime": "2026-07-27T09:18:10.639Z",
+			"userDistance": 0,
+			"userDuration": 0,
+			"userComment": null
+		}
+	],
+	"alarmOptions": {
+		"possiblePositiveFeedbackComments": [],
+		"possibleNegativeFeedbackComments": []
+	},
+	"success": true,
+	"alarmStrength": {
+		"summary": {
+			"amount": 0,
+			"labelStrengths": null
+		}
+	},
+	"feedbackPercentage": {
+		"positive": 0,
+		"negative": 40,
+		"unknown": 60
+	},
+	"feedbackQuantity": {
+		"positive": 0,
+		"negative": 2,
+		"unknown": 3
+	},
+	"optionalContent": {
+		"address": "Mozartstraße  27, ELLEN",
+		"latitude": 50.862791,
+		"longitude": 6.496168
+	},
+	"creatorName": "DN_KBM-SA",
+	"creatorID": 2014,
+	"creatorType": "tag"
+}
