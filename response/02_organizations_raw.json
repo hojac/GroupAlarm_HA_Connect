@@ -1,0 +1,469 @@
+[
+	{
+		"id": 2761,
+		"parentID": 2034,
+		"name": "DN  AMT38  FÜST",
+		"description": "Führungsstab und IuK Kreis Düren",
+		"ownerIDs": [
+			1441,
+			3569,
+			1482,
+			10926,
+			96295
+		],
+		"state": "active",
+		"hasChildren": false,
+		"availableUsers": {
+			"countInEvent": 0,
+			"countAvailable": 0,
+			"countNotAvailable": 0
+		},
+		"availableUsersTotal": {
+			"countInEvent": 0,
+			"countAvailable": 0,
+			"countNotAvailable": 0
+		},
+		"creationDate": "2019-09-06T11:41:26.724Z",
+		"location": {
+			"address": "",
+			"latitude": 0,
+			"longitude": 0
+		},
+		"tags": null,
+		"trialEndDate": "2019-09-20T11:41:26.724Z",
+		"avatarURL": "https://storage.googleapis.com/groupalarm-avatars-organization-production/avatar-2761-HIdwGf7m.png",
+		"timezone": "Europe/Berlin",
+		"language": "de",
+		"enforcesTwoFactorAuth": false,
+		"dataRetentionPeriod": 0
+	},
+	{
+		"id": 2035,
+		"parentID": 2034,
+		"name": "DN AMT38  KBM",
+		"description": "Kreisbrandmeisterei",
+		"ownerIDs": [
+			1441,
+			3569,
+			1482,
+			10926,
+			96295
+		],
+		"state": "active",
+		"hasChildren": false,
+		"availableUsers": {
+			"countInEvent": 0,
+			"countAvailable": 0,
+			"countNotAvailable": 0
+		},
+		"availableUsersTotal": {
+			"countInEvent": 0,
+			"countAvailable": 0,
+			"countNotAvailable": 0
+		},
+		"creationDate": "2019-06-26T17:19:26.559Z",
+		"location": {
+			"address": "",
+			"latitude": 0,
+			"longitude": 0
+		},
+		"tags": null,
+		"trialEndDate": "2019-07-10T17:19:26.559Z",
+		"avatarURL": "https://storage.googleapis.com/groupalarm-avatars-organization-production/avatar-2035-dRvdCbKy.png",
+		"timezone": "Europe/Berlin",
+		"language": "de",
+		"enforcesTwoFactorAuth": false,
+		"dataRetentionPeriod": 0
+	},
+	{
+		"id": 25508,
+		"parentID": 25349,
+		"name": "FHAC - Ersthelfende",
+		"description": "Organisation der betrieblichen Erste Hilfe",
+		"ownerIDs": [
+			215419
+		],
+		"state": "active",
+		"hasChildren": false,
+		"availableUsers": {
+			"countInEvent": 0,
+			"countAvailable": 0,
+			"countNotAvailable": 0
+		},
+		"availableUsersTotal": {
+			"countInEvent": 0,
+			"countAvailable": 0,
+			"countNotAvailable": 0
+		},
+		"creationDate": "2024-01-09T13:36:51.664Z",
+		"location": {
+			"address": "",
+			"latitude": 0,
+			"longitude": 0
+		},
+		"tags": null,
+		"trialEndDate": "2024-01-23T13:36:51.664Z",
+		"avatarURL": "https://storage.googleapis.com/groupalarm-avatars-organization-production/avatar-25508-xd3ju7ss.png",
+		"timezone": "Europe/Berlin",
+		"language": "de",
+		"enforcesTwoFactorAuth": false,
+		"dataRetentionPeriod": 0
+	},
+	{
+		"id": 32949,
+		"parentID": 30137,
+		"name": "FHAC - FB06 - Stille Alarmierung",
+		"description": "Stille Alarmierung - Gewaltandrohung",
+		"ownerIDs": [
+			215419
+		],
+		"state": "active",
+		"hasChildren": false,
+		"availableUsers": {
+			"countInEvent": 0,
+			"countAvailable": 0,
+			"countNotAvailable": 0
+		},
+		"availableUsersTotal": {
+			"countInEvent": 0,
+			"countAvailable": 0,
+			"countNotAvailable": 0
+		},
+		"creationDate": "2025-12-16T10:08:06.99Z",
+		"location": {
+			"address": "",
+			"latitude": 0,
+			"longitude": 0
+		},
+		"tags": null,
+		"trialEndDate": "2025-12-30T10:08:06.99Z",
+		"avatarURL": "",
+		"timezone": "Europe/Berlin",
+		"language": "de",
+		"enforcesTwoFactorAuth": false,
+		"dataRetentionPeriod": 0
+	},
+	{
+		"id": 34696,
+		"parentID": 28115,
+		"name": "FHAC - IV - PNA",
+		"description": "PNA Dez- IV",
+		"ownerIDs": [
+			215419
+		],
+		"state": "active",
+		"hasChildren": false,
+		"availableUsers": {
+			"countInEvent": 0,
+			"countAvailable": 0,
+			"countNotAvailable": 0
+		},
+		"availableUsersTotal": {
+			"countInEvent": 0,
+			"countAvailable": 0,
+			"countNotAvailable": 0
+		},
+		"creationDate": "2026-07-13T10:52:01.445Z",
+		"location": {
+			"address": "",
+			"latitude": 0,
+			"longitude": 0
+		},
+		"tags": null,
+		"trialEndDate": "2026-07-27T10:52:01.445Z",
+		"avatarURL": "",
+		"timezone": "Europe/Berlin",
+		"language": "de",
+		"enforcesTwoFactorAuth": false,
+		"dataRetentionPeriod": 0
+	},
+	{
+		"id": 25353,
+		"parentID": 25352,
+		"name": "FHAC - Krisenstab",
+		"description": "Krisenstab FH Aachen als Stabsstelle des Rektorates \nin der besonderen Aufbauorganisation\n",
+		"ownerIDs": [
+			215419
+		],
+		"state": "active",
+		"hasChildren": false,
+		"availableUsers": {
+			"countInEvent": 0,
+			"countAvailable": 0,
+			"countNotAvailable": 0
+		},
+		"availableUsersTotal": {
+			"countInEvent": 0,
+			"countAvailable": 0,
+			"countNotAvailable": 0
+		},
+		"creationDate": "2023-12-15T14:17:34.953Z",
+		"location": {
+			"address": "",
+			"latitude": 0,
+			"longitude": 0
+		},
+		"tags": null,
+		"trialEndDate": "2024-01-31T17:00:00Z",
+		"avatarURL": "",
+		"timezone": "Europe/Berlin",
+		"language": "de",
+		"enforcesTwoFactorAuth": false,
+		"dataRetentionPeriod": 0
+	},
+	{
+		"id": 31213,
+		"parentID": 28115,
+		"name": "FHAC - LUPUS TEST",
+		"description": "Test LUPUS Melder",
+		"ownerIDs": [
+			215419
+		],
+		"state": "active",
+		"hasChildren": false,
+		"availableUsers": {
+			"countInEvent": 0,
+			"countAvailable": 0,
+			"countNotAvailable": 0
+		},
+		"availableUsersTotal": {
+			"countInEvent": 0,
+			"countAvailable": 0,
+			"countNotAvailable": 0
+		},
+		"creationDate": "2025-04-09T13:26:56.3Z",
+		"location": {
+			"address": "",
+			"latitude": 0,
+			"longitude": 0
+		},
+		"tags": null,
+		"trialEndDate": "2025-04-23T13:26:56.3Z",
+		"avatarURL": "",
+		"timezone": "Europe/Berlin",
+		"language": "de",
+		"enforcesTwoFactorAuth": false,
+		"dataRetentionPeriod": 0
+	},
+	{
+		"id": 28425,
+		"parentID": 25352,
+		"name": "FHAC - Notfallteam",
+		"description": "Notfallteam der FH Aachen",
+		"ownerIDs": [
+			215419
+		],
+		"state": "active",
+		"hasChildren": false,
+		"availableUsers": {
+			"countInEvent": 0,
+			"countAvailable": 0,
+			"countNotAvailable": 0
+		},
+		"availableUsersTotal": {
+			"countInEvent": 0,
+			"countAvailable": 0,
+			"countNotAvailable": 0
+		},
+		"creationDate": "2024-07-08T09:03:15.054Z",
+		"location": {
+			"address": "",
+			"latitude": 0,
+			"longitude": 0
+		},
+		"tags": null,
+		"trialEndDate": "2024-07-22T09:03:15.054Z",
+		"avatarURL": "",
+		"timezone": "Europe/Berlin",
+		"language": "de",
+		"enforcesTwoFactorAuth": false,
+		"dataRetentionPeriod": 0
+	},
+	{
+		"id": 31805,
+		"parentID": 25349,
+		"name": "FHAC - Rektorat",
+		"description": "Rektorat der FH Aachen",
+		"ownerIDs": [
+			215419
+		],
+		"state": "active",
+		"hasChildren": false,
+		"availableUsers": {
+			"countInEvent": 0,
+			"countAvailable": 0,
+			"countNotAvailable": 0
+		},
+		"availableUsersTotal": {
+			"countInEvent": 0,
+			"countAvailable": 0,
+			"countNotAvailable": 0
+		},
+		"creationDate": "2025-07-11T09:51:11.372Z",
+		"location": {
+			"address": "",
+			"latitude": 0,
+			"longitude": 0
+		},
+		"tags": null,
+		"trialEndDate": "2025-07-25T09:51:11.372Z",
+		"avatarURL": "",
+		"timezone": "Europe/Berlin",
+		"language": "de",
+		"enforcesTwoFactorAuth": false,
+		"dataRetentionPeriod": 0
+	},
+	{
+		"id": 6943,
+		"parentID": 2031,
+		"name": "LGW Führung",
+		"description": "Führung Feuerwehr Langerwehe",
+		"ownerIDs": [
+			1441,
+			3569,
+			1482,
+			10926,
+			96295
+		],
+		"state": "active",
+		"hasChildren": false,
+		"availableUsers": {
+			"countInEvent": 0,
+			"countAvailable": 0,
+			"countNotAvailable": 0
+		},
+		"availableUsersTotal": {
+			"countInEvent": 0,
+			"countAvailable": 0,
+			"countNotAvailable": 0
+		},
+		"creationDate": "2020-04-28T16:49:43.573Z",
+		"location": {
+			"address": "",
+			"latitude": 0,
+			"longitude": 0
+		},
+		"tags": null,
+		"trialEndDate": "2020-05-12T16:49:43.573Z",
+		"avatarURL": "",
+		"timezone": "Europe/Berlin",
+		"language": "de",
+		"enforcesTwoFactorAuth": false,
+		"dataRetentionPeriod": 0
+	},
+	{
+		"id": 2038,
+		"parentID": 2031,
+		"name": "LGW IUK",
+		"description": "IUK Einheit Langerwehe",
+		"ownerIDs": [
+			1441,
+			3569,
+			1482,
+			10926,
+			96295
+		],
+		"state": "active",
+		"hasChildren": false,
+		"availableUsers": {
+			"countInEvent": 0,
+			"countAvailable": 0,
+			"countNotAvailable": 0
+		},
+		"availableUsersTotal": {
+			"countInEvent": 0,
+			"countAvailable": 0,
+			"countNotAvailable": 0
+		},
+		"creationDate": "2019-06-26T18:29:22.395Z",
+		"location": {
+			"address": "",
+			"latitude": 0,
+			"longitude": 0
+		},
+		"tags": null,
+		"trialEndDate": "2019-07-10T18:29:22.395Z",
+		"avatarURL": "",
+		"timezone": "Europe/Berlin",
+		"language": "de",
+		"enforcesTwoFactorAuth": false,
+		"dataRetentionPeriod": 0
+	},
+	{
+		"id": 2032,
+		"parentID": 2031,
+		"name": "LGW LG Luchem",
+		"description": "Löschgruppe Luchem",
+		"ownerIDs": [
+			1441,
+			3569,
+			1482,
+			10926,
+			96295
+		],
+		"state": "active",
+		"hasChildren": false,
+		"availableUsers": {
+			"countInEvent": 0,
+			"countAvailable": 0,
+			"countNotAvailable": 0
+		},
+		"availableUsersTotal": {
+			"countInEvent": 0,
+			"countAvailable": 0,
+			"countNotAvailable": 0
+		},
+		"creationDate": "2019-06-26T17:00:02.125Z",
+		"location": {
+			"address": "",
+			"latitude": 0,
+			"longitude": 0
+		},
+		"tags": null,
+		"trialEndDate": "2019-07-10T17:00:02.125Z",
+		"avatarURL": "",
+		"timezone": "Europe/Berlin",
+		"language": "de",
+		"enforcesTwoFactorAuth": false,
+		"dataRetentionPeriod": 0
+	},
+	{
+		"id": 7534,
+		"parentID": 2033,
+		"name": "LGW SAE",
+		"description": "SAE Gemeinde Langerwehe",
+		"ownerIDs": [
+			1441,
+			3569,
+			1482,
+			10926,
+			96295,
+			17534
+		],
+		"state": "active",
+		"hasChildren": false,
+		"availableUsers": {
+			"countInEvent": 0,
+			"countAvailable": 0,
+			"countNotAvailable": 0
+		},
+		"availableUsersTotal": {
+			"countInEvent": 0,
+			"countAvailable": 0,
+			"countNotAvailable": 0
+		},
+		"creationDate": "2020-06-27T07:41:22.403Z",
+		"location": {
+			"address": "",
+			"latitude": 0,
+			"longitude": 0
+		},
+		"tags": null,
+		"trialEndDate": "2020-07-11T07:41:22.403Z",
+		"avatarURL": "https://storage.googleapis.com/groupalarm-avatars-organization-production/avatar-7534-77L2dCxO.png",
+		"timezone": "Europe/Berlin",
+		"language": "de",
+		"enforcesTwoFactorAuth": false,
+		"dataRetentionPeriod": 0
+	}
+]
