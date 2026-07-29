@@ -60,6 +60,7 @@ def _alarm() -> GroupAlarmAlarm:
         personal_feedback_duration=None,
         activity=AlarmActivity.UNKNOWN,
         feedback_eligibility=FeedbackEligibility.UNKNOWN,
+        feedback_deadline=None,
         deadline_status=DeadlineStatus.UNKNOWN,
         location=AlarmLocation(
             address="Sensitive Street 1",

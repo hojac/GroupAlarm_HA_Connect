@@ -191,6 +191,22 @@
       "alarm_time": {
         "name": "Alarm time"
       },
+      "feedback_deadline": {
+        "name": "Feedback deadline"
+      },
+      "feedback_countdown": {
+        "name": "Feedback countdown"
+      },
+      "deadline_status": {
+        "name": "Feedback deadline status",
+        "state": {
+          "no_alarm": "No alarm",
+          "known_active": "Running",
+          "known_expired": "Expired",
+          "answered": "Feedback received",
+          "unknown": "Unknown"
+        }
+      },
       "event": {
         "name": "Incident number"
       },

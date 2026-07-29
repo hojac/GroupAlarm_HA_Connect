@@ -7,10 +7,10 @@ Home-Assistant-Entitäten bereit.
 
 > [!IMPORTANT]
 > Dieses Projekt steht in keiner offiziellen Verbindung zur GroupAlarm GmbH.
-> Version `0.5.0` ist ein vollständiger Neubau. Rückmeldefrist, Alarmaktivität,
-> Button-Freigabe und Einsatzort bleiben absichtlich unbekannt beziehungsweise
-> nicht verfügbar, solange ihre realen JSON-Pfade nicht durch anonymisierte
-> aktuelle Payloads belegt sind.
+> Version `0.5.0` ist ein vollständiger Neubau. Die Rückmeldefrist ist eine
+> bewusst lokale Frist ab Erkennung einer neuen Alarm-ID. Alarmaktivität und
+> Einsatzort bleiben unbekannt beziehungsweise nicht verfügbar, solange ihre
+> realen JSON-Pfade nicht abschließend belegt sind.
 
 ## Funktionsumfang
 
@@ -20,7 +20,7 @@ Home-Assistant-Entitäten bereit.
   Config Entries pro GroupAlarm-Benutzer
 - ein gemeinsamer, trafficarmer Coordinator pro Config Entry
 - isolierte Fehlerbehandlung je Organisation
-- zehn lesende Sensoren, ein Aktivitäts-Binary-Sensor, zwei
+- dreizehn lesende Sensoren, ein Aktivitäts-Binary-Sensor, zwei
   Rückmelde-Buttons und ein Standort-Tracker je Organisation
 - serverbestätigte persönliche Rückmeldung ohne optimistische Zustandsänderung
 - optionale Anfahrtszeit für positive Rückmeldungen
@@ -108,6 +108,9 @@ Installation.
 | Einsatzmeldung | Alarmtext |
 | Alarmierung Start | UTC-basierter Home-Assistant-Timestamp |
 | Alarmzeitpunkt | lokal formatierter Kompatibilitätswert |
+| Rückmeldefrist Ende | lokale Erkennungszeit plus Organisations-Timeout |
+| Rückmeldefrist Countdown | lokal berechnete Restsekunden; nach Ablauf `0` |
+| Rückmeldefrist Status | `no_alarm`, `known_active`, `known_expired`, `answered` oder `unknown` |
 | Einsatznummer | belegter Name des zugehörigen Events |
 | Rückmeldungen positiv | bestätigte aggregierte Anzahl |
 | Rückmeldungen negativ | bestätigte aggregierte Anzahl |
@@ -120,7 +123,7 @@ Installation.
 | Typ | Entität | Verhalten |
 |---|---|---|
 | Binary Sensor | Aktive Alarmierung | `unknown`, bis offene/geschlossene Real-Payloads die Statuszuordnung belegen |
-| Button | Komme | verfügbar nur bei belegter offener Rückmeldung und unbekannter eigener Antwort |
+| Button | Komme | verfügbar nur bei `WAITING`, unbekannter eigener Antwort und Countdown größer `0` |
 | Button | Komme nicht | gleiche Sicherheitsbedingung wie `Komme` |
 | Device Tracker | Einsatzort | unavailable, bis belegte und gültige Koordinaten vorliegen |
 
@@ -142,8 +145,8 @@ Der vollständige Alarmdatensatz wird nur geladen:
 - oder als Sicherheitsabgleich nach 15 Minuten.
 
 Benutzer und Organisationen werden nur beim Setup beziehungsweise Reload
-geladen. Der Organisations-Timeout wird noch nicht abgefragt, weil ohne
-belegten Referenzzeitpunkt keine sichere Deadline daraus berechnet werden kann.
+geladen. Der Organisations-Timeout wird nur beim ersten Erkennen einer neuen
+Alarm-ID zusammen mit dem Alarmdetail abgefragt.
 
 Die API dokumentiert keine Sortierreihenfolge der Alarmliste. Liegen mehr als
 zehn Alarme vor, ist deshalb formal nicht garantiert, dass das erste Fenster
@@ -152,10 +155,10 @@ den global neuesten Alarm enthält.
 ## Persönliche Rückmeldung
 
 Der vollständige Versandpfad ist fail-safe implementiert. Die produktiven
-Buttons bleiben momentan unavailable, weil noch keine anonymisierte reale
-Payload das Feld für „Rückmeldung offen“ belegt.
+Buttons sind nur bei einem passenden `WAITING`-Eintrag und während einer
+laufenden lokalen Rückmeldefrist verfügbar.
 
-Sobald diese Zuordnung belegt ist, gilt:
+Dabei gilt:
 
 1. Ein nicht wartendes Lock verhindert parallele Rückmeldungen für denselben
    Alarm.
@@ -176,19 +179,35 @@ und der normale Pollingzyklus lädt bis zur Bestätigung gezielt das Detail nach
 
 ## Rückmeldefrist und Countdown
 
-Noch kein dokumentiertes oder reales Feld ist als persönliche
-Rückmeldefrist belegt:
+GroupAlarm liefert über
+`GET /api/v1/messaging/timeout/{organizationID}` die Timeout-Dauer in Sekunden,
+aber keinen absoluten Beginn der persönlichen Frist. Deshalb verwendet die
+Integration die ausdrücklich festgelegte lokale Semantik:
 
-- `alarm.endDate` ist laut API der Zeitpunkt, zu dem der Alarm geschlossen
-  wurde.
-- `event.endDate` ist das Eventende.
-- `event.scheduledEndtime` ist das geplante Eventende.
-- die konfigurierte Anfahrtszeit ist keine Rückmeldefrist.
+1. Beim ersten Erkennen einer neuen Alarm-ID wird der Timeout einmal geladen.
+2. Die lokale Frist ist Erkennungszeit plus Timeout.
+3. Der Countdown läuft lokal im Sekundentakt; es entsteht kein API-Aufruf pro
+   Sekunde.
+4. Bei `0` werden beide Rückmelde-Buttons gesperrt. Dieselbe Fristprüfung läuft
+   nochmals unmittelbar vor jedem Feedback-POST.
+5. `RESPONDED`, `TIMEDOUT`, `UNAVAILABLE` oder ein geschlossener Alarm sperren
+   Rückmeldungen unabhängig vom lokalen Restwert.
 
-Version `0.5.0` erzeugt deshalb noch keine Deadline- oder Countdown-Entitäten.
-Der Zustand bleibt fachlich `unknown`; es wird kein lokaler Timer gestartet.
-Die endgültige Zuordnung folgt erst nach anonymisierten Listen-, Detail-,
-Timeout- und Feedback-Payloads desselben realen Alarms.
+Diese lokale Frist ist nicht die unbekannte serverseitige Benachrichtigungszeit.
+Wird Home Assistant während eines noch auf `WAITING` stehenden Alarms neu
+gestartet, beginnt deshalb eine neue lokale Frist. GroupAlarm kann eine
+Rückmeldung serverseitig bereits früher ablehnen.
+
+Der Countdown-Sensor schreibt während einer laufenden Frist einmal pro Sekunde
+einen Zustand. Wer diese Historie nicht benötigt, sollte ihn vom Recorder
+ausschließen:
+
+```yaml
+recorder:
+  exclude:
+    entities:
+      - sensor.<deine_entity_id_fuer_den_ruckmeldefrist_countdown>
+```
 
 ## Mehrere Organisationen und Config Entries
 
@@ -247,14 +266,14 @@ genau ein Übergang protokolliert.
 
 ### Rückmelde-Buttons sind unavailable
 
-Das ist im aktuellen evidenzbasierten Mapper beabsichtigt. Alte sichtbare
-Alarme dürfen nicht versehentlich eine Rückmeldung ermöglichen. Für die
-Freigabe wird eine anonymisierte offene Alarm-Payload benötigt.
+Prüfe den Sensor `Rückmeldefrist Status`. Die Buttons bleiben gesperrt, wenn
+kein passender `WAITING`-Eintrag vorliegt, die Frist `0` erreicht hat, bereits
+eine Antwort bestätigt wurde oder der Alarm geschlossen ist.
 
-### Standort oder Countdown fehlt
+### Standort fehlt
 
-Beide Zuordnungen sind bis zu realen anonymisierten Payloads blockiert. Es wird
-keine Ersatzposition und keine ähnlich benannte Zeit als Deadline verwendet.
+Die Zuordnung bleibt bis zu weiteren realen anonymisierten Payloads blockiert.
+Es wird keine Ersatzposition verwendet.
 
 ### Integration entfernen
 

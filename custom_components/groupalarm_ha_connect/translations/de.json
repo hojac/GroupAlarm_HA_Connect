@@ -191,6 +191,22 @@
       "alarm_time": {
         "name": "Alarmzeitpunkt"
       },
+      "feedback_deadline": {
+        "name": "Rückmeldefrist Ende"
+      },
+      "feedback_countdown": {
+        "name": "Rückmeldefrist Countdown"
+      },
+      "deadline_status": {
+        "name": "Rückmeldefrist Status",
+        "state": {
+          "no_alarm": "Kein Alarm",
+          "known_active": "Läuft",
+          "known_expired": "Abgelaufen",
+          "answered": "Rückmeldung erhalten",
+          "unknown": "Unbekannt"
+        }
+      },
       "event": {
         "name": "Einsatznummer"
       },

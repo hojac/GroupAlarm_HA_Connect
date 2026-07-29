@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import asyncio
 from dataclasses import replace
-from unittest.mock import AsyncMock, patch
+from datetime import UTC, datetime, timedelta
+from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 from homeassistant.const import CONF_TOKEN
@@ -57,6 +58,7 @@ from custom_components.groupalarm_ha_connect.feedback import (
     FeedbackUnavailableError,
 )
 from custom_components.groupalarm_ha_connect.models import (
+    DeadlineStatus,
     FeedbackEligibility,
     GroupAlarmCoordinatorData,
     OrganizationError,
@@ -139,7 +141,14 @@ def _detail(
     response: bool | None = None,
     duration: int | None = None,
 ) -> dict[str, object]:
-    feedback: list[dict[str, object]] = []
+    feedback: list[dict[str, object]] = [
+        {
+            "alarmID": alarm_id,
+            "userID": 41,
+            "state": "WAITING",
+            "feedback": False,
+        }
+    ]
     if response is not None:
         item: dict[str, object] = {
             "alarmID": alarm_id,
@@ -149,7 +158,7 @@ def _detail(
         }
         if duration is not None:
             item["userDuration"] = duration
-        feedback.append(item)
+        feedback = [item]
     return {
         "id": alarm_id,
         "organizationID": organization_id,
@@ -178,6 +187,7 @@ def _coordinator(
     device_id: int | None = None,
 ) -> tuple[GroupAlarmCoordinator, AsyncMock]:
     client = AsyncMock(spec=GroupAlarmClient)
+    client.async_get_organization_timeout.return_value = 300
     coordinator = GroupAlarmCoordinator(
         hass,
         _entry(
@@ -197,16 +207,13 @@ async def _load_feedback_context(
     coordinator: GroupAlarmCoordinator,
     client: AsyncMock,
 ) -> None:
-    """Load one alarm and mark only its eligibility as fixture-proven open."""
+    """Load one alarm with a fixture-proven open local feedback window."""
     client.async_get_alarms.return_value = _page()
     client.async_get_alarm.return_value = _detail()
     coordinator.data = await coordinator._async_update_data()
     snapshot = coordinator.snapshot(7)
     assert snapshot.alarm is not None
-    alarm = replace(
-        snapshot.alarm,
-        feedback_eligibility=FeedbackEligibility.OPEN,
-    )
+    alarm = replace(snapshot.alarm, feedback_eligibility=FeedbackEligibility.OPEN)
     coordinator._alarms[7] = alarm
     coordinator.data = GroupAlarmCoordinatorData(
         organizations=(replace(snapshot, alarm=alarm),)
@@ -228,6 +235,122 @@ async def test_stable_list_gate_reuses_detail(
     assert client.async_get_alarms.await_count == 2
     client.async_get_alarms.assert_awaited_with(7, limit=10)
     client.async_get_alarm.assert_awaited_once_with(11)
+
+
+async def test_new_alarm_loads_one_local_feedback_window(
+    hass: HomeAssistant,
+) -> None:
+    """A new alarm loads its timeout once and reuses the resulting deadline."""
+    coordinator, client = _coordinator(hass)
+    client.async_get_alarms.return_value = _page()
+    client.async_get_alarm.return_value = _detail()
+    received_at = datetime(2026, 7, 29, 14, tzinfo=UTC)
+
+    with (
+        patch(
+            "custom_components.groupalarm_ha_connect.coordinator._utcnow",
+            side_effect=(
+                received_at,
+                received_at + timedelta(seconds=5),
+                received_at + timedelta(seconds=5),
+                received_at + timedelta(seconds=6),
+            ),
+        ),
+        patch(
+            "custom_components.groupalarm_ha_connect.coordinator."
+            "async_track_time_interval",
+            return_value=Mock(),
+        ),
+    ):
+        first = await coordinator._async_update_data()
+        coordinator.data = first
+        second = await coordinator._async_update_data()
+
+    alarm = second.for_organization(7).alarm
+    assert alarm is not None
+    assert alarm.feedback_deadline == received_at + timedelta(seconds=300)
+    assert alarm.deadline_status is DeadlineStatus.KNOWN_ACTIVE
+    assert alarm.feedback_eligibility is FeedbackEligibility.OPEN
+    client.async_get_organization_timeout.assert_awaited_once_with(7)
+    client.async_get_alarm.assert_awaited_once_with(11)
+
+
+async def test_new_alarm_countdown_does_not_depend_on_button_eligibility(
+    hass: HomeAssistant,
+) -> None:
+    """Every unclosed new alarm gets a countdown while unknown stays fail-safe."""
+    coordinator, client = _coordinator(hass)
+    client.async_get_alarms.return_value = _page()
+    detail = _detail()
+    detail["feedback"] = []
+    client.async_get_alarm.return_value = detail
+    received_at = datetime(2026, 7, 29, 14, tzinfo=UTC)
+
+    with (
+        patch(
+            "custom_components.groupalarm_ha_connect.coordinator._utcnow",
+            return_value=received_at,
+        ),
+        patch(
+            "custom_components.groupalarm_ha_connect.coordinator."
+            "async_track_time_interval",
+            return_value=Mock(),
+        ),
+    ):
+        coordinator.data = await coordinator._async_update_data()
+        alarm = coordinator.snapshot(7).alarm
+        assert alarm is not None
+        assert alarm.deadline_status is DeadlineStatus.KNOWN_ACTIVE
+        assert alarm.feedback_eligibility is FeedbackEligibility.UNKNOWN
+        assert coordinator.feedback_countdown(7) == 300
+        assert coordinator.can_send_feedback(7) is False
+
+
+async def test_countdown_zero_closes_feedback_without_api_poll(
+    hass: HomeAssistant,
+) -> None:
+    """The local zero boundary disables buttons and blocks every feedback POST."""
+    coordinator, client = _coordinator(hass)
+    client.async_get_alarms.return_value = _page()
+    client.async_get_alarm.return_value = _detail()
+    received_at = datetime(2026, 7, 29, 14, tzinfo=UTC)
+    cancel = Mock()
+
+    with (
+        patch(
+            "custom_components.groupalarm_ha_connect.coordinator._utcnow",
+            return_value=received_at,
+        ),
+        patch(
+            "custom_components.groupalarm_ha_connect.coordinator."
+            "async_track_time_interval",
+            return_value=cancel,
+        ),
+    ):
+        coordinator.data = await coordinator._async_update_data()
+
+    deadline = received_at + timedelta(seconds=300)
+    with patch(
+        "custom_components.groupalarm_ha_connect.coordinator._utcnow",
+        return_value=deadline,
+    ):
+        assert coordinator.feedback_countdown(7) == 0
+        assert coordinator.can_send_feedback(7) is False
+        with pytest.raises(FeedbackUnavailableError):
+            await coordinator.async_send_feedback(7, response=True)
+        coordinator._async_countdown_tick(deadline)
+        assert coordinator.feedback_countdown(7) == 0
+
+    alarm = coordinator.snapshot(7).alarm
+    assert alarm is not None
+    assert alarm.deadline_status is DeadlineStatus.KNOWN_EXPIRED
+    assert alarm.feedback_eligibility is FeedbackEligibility.CLOSED
+    cancel.assert_called_once_with()
+    assert client.async_get_alarms.await_count == 1
+    assert client.async_get_alarm.await_count == 1
+    assert client.async_get_organization_timeout.await_count == 1
+    client.async_send_feedback.assert_not_awaited()
+    client.async_send_feedback_with_duration.assert_not_awaited()
 
 
 async def test_changed_fingerprint_refreshes_same_alarm_detail(
@@ -413,6 +536,9 @@ async def test_standard_feedback_changes_state_only_after_detail_confirmation(
 
     assert result is FeedbackDeliveryResult.CONFIRMED
     assert coordinator.snapshot(7).personal_feedback is PersonalFeedback.NEGATIVE
+    assert coordinator.snapshot(7).deadline_status is DeadlineStatus.ANSWERED
+    assert coordinator.feedback_countdown(7) is None
+    assert coordinator._unsub_countdown is None
     client.async_send_feedback_with_duration.assert_not_awaited()
 
 
@@ -480,6 +606,40 @@ async def test_explicit_duration_rejection_uses_confirmed_standard_fallback(
         user_id=41,
         response=True,
     )
+
+
+async def test_duration_fallback_is_blocked_when_countdown_reaches_zero(
+    hass: HomeAssistant,
+) -> None:
+    """A delayed app rejection cannot start a fallback POST after expiry."""
+    coordinator, client = _coordinator(
+        hass,
+        durations={"7": 12},
+        device_id=91,
+    )
+    await _load_feedback_context(coordinator, client)
+    alarm = coordinator.snapshot(7).alarm
+    assert alarm is not None
+    assert alarm.feedback_deadline is not None
+    client.async_send_feedback_with_duration.side_effect = GroupAlarmRequestError(400)
+    before_deadline = alarm.feedback_deadline - timedelta(seconds=1)
+
+    with (
+        patch(
+            "custom_components.groupalarm_ha_connect.coordinator._utcnow",
+            side_effect=(
+                before_deadline,
+                before_deadline,
+                before_deadline,
+                alarm.feedback_deadline,
+            ),
+        ),
+        pytest.raises(FeedbackUnavailableError),
+    ):
+        await coordinator.async_send_feedback(7, response=True)
+
+    client.async_send_feedback_with_duration.assert_awaited_once()
+    client.async_send_feedback.assert_not_awaited()
 
 
 async def test_unknown_app_write_is_reconciled_without_blind_fallback(

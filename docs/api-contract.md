@@ -164,9 +164,10 @@ Response:
 
 `timeout` is an integer `10..86400` seconds. Its documented meaning is the
 duration after which a notified user times out and cannot answer an alarm.
-The specification does not identify the absolute reference timestamp. The
-client may cache this relatively static organization setting, but the domain
-mapper must not calculate a deadline until the reference timestamp is proven.
+The specification does not identify the absolute server-side reference
+timestamp. The integration therefore uses the product-defined local contract:
+load the value once when a new alarm ID is first detected and calculate a
+Home-Assistant-local cutoff from that detection time.
 
 ### App devices
 
@@ -270,8 +271,7 @@ The design goal is to avoid downloading alarm detail on every poll.
 1. Load the current user once per config-entry setup/reload.
 2. Load accessible organizations during setup/options/reconfigure, not every
    alarm poll.
-3. Load organization timeout once and refresh it only on setup, reconfigure or
-   a conservative long-lived cache interval.
+3. Load the organization timeout once for each newly detected alarm ID.
 4. Poll the alarm-list gate once per configured interval and organization,
    with bounded parallelism.
 5. Cache the selected alarm ID and a small list-derived revision fingerprint.
@@ -325,10 +325,9 @@ entry. Organization names are refreshed there, not during alarm polling.
 `DataUpdateCoordinator(always_update=False)` suppresses entity callbacks when
 the immutable normalized snapshots compare equal.
 
-The organization timeout is not requested in Phase 2 or Phase 3 because no
-proven reference timestamp currently turns that duration into a deadline or
-eligibility decision. It will be loaded and cached when Phase 4 can consume it
-without creating unused setup traffic.
+The organization timeout is requested together with canonical detail only for
+a new alarm ID. It is not refreshed for ordinary list polls or local countdown
+ticks.
 
 ## Feedback delivery and reconciliation
 
@@ -362,15 +361,13 @@ is informed that duration delivery could not be verified.
 
 The contract does not yet prove:
 
-- an absolute personal feedback deadline;
-- the timeout's reference timestamp;
-- a field that permits feedback for a specific visible alarm;
+- the absolute server-side personal feedback deadline;
+- the server's notification/reference timestamp;
 - newest-first list order;
 - idempotency of either feedback POST;
 - the complete set of unambiguous app-feedback rejection responses.
 
-Production code must represent these as unknown rather than synthesize an
-answer.
+The local cutoff must not be presented as that unknown server timestamp.
 
 ## Diagnostics and repair boundary
 

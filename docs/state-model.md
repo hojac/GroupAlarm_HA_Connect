@@ -66,8 +66,9 @@ real list/detail fixtures prove the status shape, including `event.abort`.
 
 Buttons require `open`; `unknown` is fail-safe and does not enable them. Alarm
 visibility, activity and personal response must not be substituted for this
-axis. The organization timeout describes a duration but cannot decide this
-state until its reference timestamp is proven.
+axis. A matching `WAITING` record yields `open`; matching `RESPONDED`,
+`TIMEDOUT` or `UNAVAILABLE` records yield `closed`. The organization timeout
+adds a separate local cutoff and cannot open an otherwise unknown state.
 
 ### Personal feedback
 
@@ -88,14 +89,15 @@ following canonical GET can.
 | State | Stable value | Meaning |
 |---|---|---|
 | No alarm | `no_alarm` | No current alarm |
-| Known active | `known_active` | A proven absolute deadline is in the future and no personal answer is confirmed |
-| Known expired | `known_expired` | A proven absolute deadline passed without a confirmed answer |
+| Known active | `known_active` | The local detection-based deadline is in the future and no personal answer is confirmed |
+| Known expired | `known_expired` | The local detection-based deadline passed without a confirmed answer |
 | Answered | `answered` | Personal feedback is server-confirmed |
 | Unknown | `unknown` | No proven absolute deadline |
 
-The initial mapper intentionally emits only `no_alarm`, `answered` and
-`unknown`. `known_active`/`known_expired` are blocked until the deadline field
-and reference timestamp are evidenced by current real payloads.
+The payload mapper emits `answered` or `unknown`. The coordinator adds
+`known_active` and `known_expired` from the new-alarm detection time plus the
+validated organization timeout. This is intentionally not a claim about the
+unknown GroupAlarm server-side reference timestamp.
 
 Forbidden deadline inputs:
 
@@ -127,13 +129,12 @@ Forbidden deadline inputs:
 
 1. Load user identity once.
 2. Resolve configured organization identities.
-3. Load/cache organization timeout once its reference semantics are proven
-   (deferred in Phase 2 to avoid unused traffic).
-4. Load a sufficiently safe alarm-list window.
-5. Select a validated candidate only under the ordering policy documented in
+3. Load a sufficiently safe alarm-list window.
+4. Select a validated candidate only under the ordering policy documented in
    `api-contract.md`.
-6. Fetch detail for that candidate.
-7. Normalize and publish one snapshot per organization.
+5. For a newly detected alarm ID, fetch canonical detail and the organization
+   timeout together.
+6. Normalize and publish one snapshot per organization.
 
 ### Regular low-traffic poll
 
@@ -189,9 +190,8 @@ The local ticker is separate from API polling and owned once per config entry.
 - Never generate second-by-second writes without a known running deadline.
 - Document a recorder exclusion for the countdown entity if second-level
   history is not useful.
-
-No timer implementation is allowed until the blocked deadline mapping is
-resolved.
+- Reject feedback dynamically at the deadline even if an entity update is
+  delayed.
 
 ## Location
 
@@ -219,14 +219,12 @@ location tracker remains unavailable, until their source mappings are proven.
 
 Phase 3 adds translated positive and negative button entities, server-confirmed
 reconciliation, optional arrival-duration delivery, pending-write protection
-and safe fallback notifications. The buttons intentionally remain unavailable
-for currently known payloads because feedback eligibility is still `unknown`;
-tests exercise the complete action path with a fixture-proven `open` snapshot.
-An anonymized real open-alarm payload is required before the production mapper
-may emit `open`.
+and safe fallback notifications. A matching `WAITING` record opens feedback
+only while the coordinator's local countdown is greater than zero.
 
-Deadline-end, deadline-status and countdown entities remain deferred to Phase
-4.
+Phase 4 adds deadline-end, deadline-status and countdown entities. The single
+local ticker is owned by the config-entry coordinator and is removed after
+answer, expiry, alarm replacement, reload or unload.
 
 ## Availability and error model
 
@@ -261,13 +259,13 @@ log raw payloads or repeat the same failure every poll.
 | 1 | Project foundation, typed client, config flow, migration, translations | Client/config-flow tests, lint and typing pass |
 | 2 | Coordinator, multiple organizations, normalization, read-only entities, low-traffic list gate | Lifecycle, isolation and polling tests pass |
 | 3 | Server-confirmed feedback, buttons, arrival duration, safe reconciliation/fallback | No optimistic state or blind duplicate POST |
-| 4 | Deadline and countdown | Only after real field/path/reference-time evidence and fixtures |
+| 4 | Local deadline and countdown | Timeout endpoint, matching feedback state and local detection reference are tested |
 | 5 | Diagnostics, repairs, CI, docs/dashboard, coverage | Full validation and ≥95% meaningful coverage |
 | 6 | Real HA test, upgrade/migration test, release candidate | Separate approval before merge, tag or release |
 
-Phase 4 is intentionally independent. Missing deadline evidence does not block
-the foundation, reading, traffic optimization or feedback reconciliation, but
-it does block button enablement where eligibility cannot otherwise be proven.
+The local deadline is deliberately independent of the unknown server-side
+notification timestamp. Missing server timing evidence does not block the
+local safety cutoff.
 
 ## Diagnostic projection
 

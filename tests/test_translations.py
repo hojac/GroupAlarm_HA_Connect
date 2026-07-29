@@ -28,6 +28,13 @@ def test_translation_key_parity() -> None:
         "komme",
         "komme_nicht",
     }
+    assert set(english["entity"]["sensor"]["deadline_status"]["state"]) == {
+        "no_alarm",
+        "known_active",
+        "known_expired",
+        "answered",
+        "unknown",
+    }
     assert set(english["entity"]) == {
         "binary_sensor",
         "button",

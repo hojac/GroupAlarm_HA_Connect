@@ -55,14 +55,12 @@ actionable by the user.
 
 ## External repository gate
 
-The repository currently has no GitHub topics. HACS can report this as a strict
-repository validation failure. Before the release candidate is accepted, the
-repository owner must add the applicable Home Assistant integration topic in
-GitHub repository settings and rerun CI.
+The required GitHub topics are configured and the latest HACS repository
+validation passed. Every release candidate must keep that validation green.
 
 ## Release boundary
 
 Passing Phase 5 checks does not authorize a merge, tag or release. Phase 6 still
 requires a real Home Assistant installation test, two organizations, feedback
-with and without arrival duration, migration/upgrade verification and real
-anonymized payload evidence for the blocked Phase 4 semantics.
+with and without arrival duration, migration/upgrade verification and a real
+test of the local countdown and zero-boundary feedback lock.

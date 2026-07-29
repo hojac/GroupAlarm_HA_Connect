@@ -6,9 +6,8 @@
 # Entity IDs are installation-specific and are intentionally not derived from
 # internal GroupAlarm IDs in this template.
 #
-# The current evidence-backed mapper has no proven deadline, activity, feedback
-# eligibility, or location path. The template therefore displays those states
-# neutrally and relies on the actual button entities' availability.
+# The feedback deadline is local to Home Assistant and starts when a new alarm
+# ID is detected. Activity and location remain neutral until proven.
 
 type: vertical-stack
 cards:
@@ -134,15 +133,20 @@ cards:
   - type: markdown
     title: Rückmeldefrist
     content: >-
-      {% set feedback =
-        states('sensor.groupalarm_ha_connect_beispiel_meine_ruckmeldung') %}
-      {% if feedback in ['komme', 'komme_nicht'] %}
+      {% set status =
+        states('sensor.groupalarm_ha_connect_beispiel_ruckmeldefrist_status') %}
+      {% set countdown =
+        states('sensor.groupalarm_ha_connect_beispiel_ruckmeldefrist_countdown') %}
+      {% if status == 'answered' %}
       **Rückmeldung erhalten**
-      {% elif feedback == 'no_alarm' %}
+      {% elif status == 'known_active' %}
+      **{{ countdown }} Sekunden**
+      {% elif status == 'known_expired' %}
+      **Abgelaufen**
+      {% elif status == 'no_alarm' %}
       Kein Alarm
       {% else %}
-      **Unbekannt** – die persönliche Rückmeldefrist ist noch nicht
-      durch eine reale, anonymisierte API-Payload belegt.
+      **Unbekannt**
       {% endif %}
 
   - type: horizontal-stack

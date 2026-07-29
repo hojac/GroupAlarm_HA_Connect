@@ -17,6 +17,8 @@ All notable changes to this project are documented in this file.
   repository safety validation.
 - Reproducible Ruff, Mypy, Pytest, coverage, Hassfest, and HACS CI.
 - German and English translations and a state-safe wall-display template.
+- Local per-alarm feedback deadline and seconds countdown based on the
+  organization timeout loaded when a new alarm ID is detected.
 
 ### Changed
 
@@ -24,6 +26,8 @@ All notable changes to this project are documented in this file.
 - Alarm details load only for a new or changed alarm reference, pending
   reconciliation, or the 15-minute safety refresh.
 - Personal feedback is shown only after matching canonical detail confirms it.
+- Matching `WAITING` feedback enables buttons only while the local countdown
+  is above zero; expiry is rechecked immediately before every feedback POST.
 - Documentation no longer treats `alarm.endDate`, an event end, or an arrival
   duration as a personal feedback deadline.
 
@@ -34,9 +38,11 @@ All notable changes to this project are documented in this file.
 
 ### Known limitations
 
-- Activity, feedback eligibility, location, and deadline/countdown mappings need
-  anonymized current real payloads before they can leave `unknown` or
-  `unavailable`.
+- Activity and location mappings still need additional current real-payload
+  evidence before they can leave `unknown` or `unavailable`.
+- GroupAlarm does not expose the server notification timestamp used for its own
+  timeout. The displayed cutoff is therefore local to Home Assistant and starts
+  when the integration detects a new alarm ID.
 - The alarm-list API does not document ordering, so a bounded first page cannot
   formally guarantee the globally newest alarm.
 

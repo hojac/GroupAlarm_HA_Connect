@@ -15,6 +15,8 @@ Every JSON fixture must contain this top-level marker:
 }
 ```
 
-No real payload has been added yet. Activity, feedback eligibility, location,
-and feedback-deadline mappings therefore remain blocked until the required
-anonymized evidence is available.
+No real payload has been added yet. Activity and location mappings therefore
+remain blocked until the required anonymized evidence is available. Feedback
+eligibility and the local deadline use minimal synthetic structures matching
+the separately reviewed `WAITING`/`TIMEDOUT` and timeout responses; raw
+responses are never committed.

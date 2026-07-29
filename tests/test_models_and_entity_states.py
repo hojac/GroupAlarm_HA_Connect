@@ -68,6 +68,7 @@ def _alarm(
         personal_feedback_duration=12,
         activity=activity,
         feedback_eligibility=FeedbackEligibility.OPEN,
+        feedback_deadline=datetime(2026, 7, 27, 10, 5, tzinfo=UTC),
         deadline_status=DeadlineStatus.ANSWERED,
         location=location,
     )
@@ -169,12 +170,15 @@ def test_sensor_values_cover_alarm_and_no_alarm_projections() -> None:
     assert _alarm_time(None) is None
     assert _value(empty, "user_id") == 41
     assert _value(empty, "my_feedback") == PersonalFeedback.NO_ALARM.value
+    assert _value(empty, "deadline_status") == DeadlineStatus.NO_ALARM.value
     assert _value(empty, "alarm_id") is None
 
     expected = {
         "alarm_id": 11,
         "message": "Probealarm",
         "start": alarm.started_at,
+        "feedback_deadline": alarm.feedback_deadline,
+        "deadline_status": DeadlineStatus.ANSWERED.value,
         "event": "Einsatz",
         "feedback_positive": 2,
         "feedback_negative": 1,

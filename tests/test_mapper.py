@@ -245,6 +245,43 @@ def test_personal_feedback_requires_exact_server_confirmation(
     )
 
 
+@pytest.mark.parametrize(
+    ("state", "expected"),
+    [
+        ("WAITING", FeedbackEligibility.OPEN),
+        ("TIMEDOUT", FeedbackEligibility.CLOSED),
+        ("UNAVAILABLE", FeedbackEligibility.CLOSED),
+        ("RESPONDED", FeedbackEligibility.CLOSED),
+        ("UNKNOWN", FeedbackEligibility.UNKNOWN),
+    ],
+)
+def test_matching_feedback_state_controls_eligibility(
+    state: str,
+    expected: FeedbackEligibility,
+) -> None:
+    """Only real matching feedback states can open or close feedback."""
+    payload = _detail(
+        feedback=[
+            {
+                "alarmID": 11,
+                "userID": 41,
+                "state": state,
+                "feedback": False,
+            }
+        ]
+    )
+    payload.pop("endDate")
+
+    alarm = normalize_alarm(
+        payload,
+        alarm_id=11,
+        organization_id=7,
+        user_id=41,
+    )
+
+    assert alarm.feedback_eligibility is expected
+
+
 def test_personal_feedback_duration_uses_only_matching_confirmed_record() -> None:
     alarm = normalize_alarm(
         _detail(
@@ -295,7 +332,7 @@ def test_invalid_confirmed_personal_duration_is_rejected(duration: object) -> No
         )
 
 
-def test_normalizer_does_not_invent_blocked_semantics() -> None:
+def test_normalizer_keeps_unrelated_semantics_separate() -> None:
     alarm = normalize_alarm(
         _detail(),
         alarm_id=11,
@@ -306,7 +343,8 @@ def test_normalizer_does_not_invent_blocked_semantics() -> None:
     assert alarm.closed_at == datetime(2026, 7, 27, 10, 5, tzinfo=UTC)
     assert alarm.event_closed_at == datetime(2026, 7, 27, 11, tzinfo=UTC)
     assert alarm.activity is AlarmActivity.UNKNOWN
-    assert alarm.feedback_eligibility is FeedbackEligibility.UNKNOWN
+    assert alarm.feedback_eligibility is FeedbackEligibility.CLOSED
+    assert alarm.feedback_deadline is None
     assert alarm.deadline_status is DeadlineStatus.UNKNOWN
     assert alarm.location is None
 

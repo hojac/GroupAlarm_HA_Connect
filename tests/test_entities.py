@@ -93,7 +93,14 @@ def _detail(organization_id: int) -> dict[str, object]:
             "organizationID": organization_id,
             "archived": False,
         },
-        "feedback": [],
+        "feedback": [
+            {
+                "alarmID": alarm_id,
+                "userID": 41,
+                "state": "WAITING",
+                "feedback": False,
+            }
+        ],
         "feedbackQuantity": {
             "positive": 2,
             "negative": 1,
@@ -153,6 +160,11 @@ def _api_patches(
             "async_get_alarm",
             new=get_alarm,
         ),
+        patch.object(
+            GroupAlarmClient,
+            "async_get_organization_timeout",
+            new=AsyncMock(return_value=300),
+        ),
     )
 
 
@@ -162,14 +174,14 @@ async def test_setup_creates_stable_devices_and_read_entities(
     entry = _entry()
     entry.add_to_hass(hass)
     patches = _api_patches()
-    with patches[0], patches[1], patches[2], patches[3]:
+    with patches[0], patches[1], patches[2], patches[3], patches[4]:
         assert await hass.config_entries.async_setup(entry.entry_id)
         await hass.async_block_till_done()
 
     entity_registry = er.async_get(hass)
     device_registry = dr.async_get(hass)
     entries = er.async_entries_for_config_entry(entity_registry, entry.entry_id)
-    assert len(entries) == 28
+    assert len(entries) == 34
 
     for organization_id, expected_name in ((7, "Alpha"), (12, "Bravo")):
         device = device_registry.async_get_device(
@@ -208,7 +220,23 @@ async def test_setup_creates_stable_devices_and_read_entities(
                 build_entity_unique_id(41, organization_id, button_key),
             )
             assert button_entity_id is not None
-            assert hass.states.get(button_entity_id).state == STATE_UNAVAILABLE
+            assert hass.states.get(button_entity_id).state == STATE_UNKNOWN
+
+        deadline_status_id = entity_registry.async_get_entity_id(
+            "sensor",
+            DOMAIN,
+            build_entity_unique_id(41, organization_id, "deadline_status"),
+        )
+        assert deadline_status_id is not None
+        assert hass.states.get(deadline_status_id).state == "known_active"
+
+        countdown_id = entity_registry.async_get_entity_id(
+            "sensor",
+            DOMAIN,
+            build_entity_unique_id(41, organization_id, "feedback_countdown"),
+        )
+        assert countdown_id is not None
+        assert 299 <= int(hass.states.get(countdown_id).state) <= 300
 
         activity_entity_id = entity_registry.async_get_entity_id(
             "binary_sensor",
@@ -234,7 +262,7 @@ async def test_partial_failure_and_recovery_affect_only_one_organization(
     entry.add_to_hass(hass)
     failures = {12}
     patches = _api_patches(failing_organizations=failures)
-    with patches[0], patches[1], patches[2], patches[3]:
+    with patches[0], patches[1], patches[2], patches[3], patches[4]:
         assert await hass.config_entries.async_setup(entry.entry_id)
         await hass.async_block_till_done()
 
@@ -267,7 +295,7 @@ async def test_unload_removes_states_and_stops_coordinator(
     entry = _entry((7,))
     entry.add_to_hass(hass)
     patches = _api_patches()
-    with patches[0], patches[1], patches[2], patches[3]:
+    with patches[0], patches[1], patches[2], patches[3], patches[4]:
         assert await hass.config_entries.async_setup(entry.entry_id)
         await hass.async_block_till_done()
 
@@ -293,6 +321,7 @@ async def test_unload_removes_states_and_stops_coordinator(
     assert hass.states.get(alarm_entity_id).state == STATE_UNAVAILABLE
     assert not coordinator._listeners
     assert coordinator._unsub_refresh is None
+    assert coordinator._unsub_countdown is None
 
 
 async def test_registry_migration_preserves_selected_and_removes_stale(

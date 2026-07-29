@@ -174,13 +174,14 @@ def _personal_feedback(
     *,
     alarm_id: int,
     user_id: int,
-) -> tuple[PersonalFeedback, int | None]:
-    """Return only a matching server-confirmed personal response."""
+) -> tuple[PersonalFeedback, int | None, FeedbackEligibility]:
+    """Return matching personal feedback and response eligibility."""
     if not isinstance(value, list):
         raise GroupAlarmResponseError("Invalid GroupAlarm field: alarm.feedback")
 
     confirmed: set[PersonalFeedback] = set()
     durations: set[int] = set()
+    matching_states: set[str] = set()
     for item in value:
         if not isinstance(item, dict):
             continue
@@ -193,8 +194,13 @@ def _personal_feedback(
             or not isinstance(item_user_id, int)
             or item_alarm_id != alarm_id
             or item_user_id != user_id
-            or item.get("state") != "RESPONDED"
         ):
+            continue
+        state = item.get("state")
+        if not isinstance(state, str):
+            continue
+        matching_states.add(state)
+        if state != "RESPONDED":
             continue
         feedback = item.get("feedback")
         if feedback is True:
@@ -218,10 +224,16 @@ def _personal_feedback(
         raise GroupAlarmResponseError(
             "GroupAlarm returned conflicting personal feedback"
         )
+    eligibility = FeedbackEligibility.UNKNOWN
+    if matching_states:
+        if matching_states == {"WAITING"}:
+            eligibility = FeedbackEligibility.OPEN
+        elif matching_states <= {"RESPONDED", "TIMEDOUT", "UNAVAILABLE"}:
+            eligibility = FeedbackEligibility.CLOSED
     if confirmed:
         duration = next(iter(durations)) if len(durations) == 1 else None
-        return next(iter(confirmed)), duration
-    return PersonalFeedback.UNKNOWN, None
+        return next(iter(confirmed)), duration, FeedbackEligibility.CLOSED
+    return PersonalFeedback.UNKNOWN, None, eligibility
 
 
 def _location(_value: object) -> AlarmLocation | None:
@@ -272,8 +284,13 @@ def normalize_alarm(
     abort = event.get("abort")
     if abort is not None:
         _object(abort, "alarm.event.abort")
+    closed_at = _optional_datetime(payload.get("endDate"), "alarm.endDate")
 
-    personal_feedback, personal_feedback_duration = _personal_feedback(
+    (
+        personal_feedback,
+        personal_feedback_duration,
+        feedback_eligibility,
+    ) = _personal_feedback(
         payload.get("feedback"),
         alarm_id=alarm_id,
         user_id=user_id,
@@ -283,13 +300,15 @@ def normalize_alarm(
         if personal_feedback in (PersonalFeedback.POSITIVE, PersonalFeedback.NEGATIVE)
         else DeadlineStatus.UNKNOWN
     )
+    if closed_at is not None:
+        feedback_eligibility = FeedbackEligibility.CLOSED
 
     return GroupAlarmAlarm(
         id=alarm_id,
         organization_id=organization_id,
         message=message,
         started_at=_datetime(payload.get("startDate"), "alarm.startDate"),
-        closed_at=_optional_datetime(payload.get("endDate"), "alarm.endDate"),
+        closed_at=closed_at,
         event_id=_optional_positive_int(event.get("id"), "alarm.event.id"),
         event_name=event_name,
         event_closed_at=_optional_datetime(event.get("endDate"), "alarm.event.endDate"),
@@ -300,9 +319,10 @@ def normalize_alarm(
         ),
         personal_feedback=personal_feedback,
         personal_feedback_duration=personal_feedback_duration,
-        # Official and real-payload evidence still does not prove these axes.
+        # Alarm activity remains separate from the feedback window.
         activity=AlarmActivity.UNKNOWN,
-        feedback_eligibility=FeedbackEligibility.UNKNOWN,
+        feedback_eligibility=feedback_eligibility,
+        feedback_deadline=None,
         deadline_status=deadline_status,
         location=_location(payload.get("optionalContent")),
     )

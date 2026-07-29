@@ -11,14 +11,19 @@ from homeassistant.components.sensor import (
     SensorEntityDescription,
     SensorStateClass,
 )
-from homeassistant.const import EntityCategory
+from homeassistant.const import EntityCategory, UnitOfTime
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.util import dt as dt_util
 
 from .coordinator import GroupAlarmCoordinator
 from .entity import GroupAlarmEntity
-from .models import GroupAlarmConfigEntry, OrganizationSnapshot, PersonalFeedback
+from .models import (
+    DeadlineStatus,
+    GroupAlarmConfigEntry,
+    OrganizationSnapshot,
+    PersonalFeedback,
+)
 
 type SensorValue = str | int | float | Decimal | datetime | None
 
@@ -40,6 +45,23 @@ SENSORS: tuple[SensorEntityDescription, ...] = (
     SensorEntityDescription(
         key="alarm_time",
         translation_key="alarm_time",
+    ),
+    SensorEntityDescription(
+        key="feedback_deadline",
+        translation_key="feedback_deadline",
+        device_class=SensorDeviceClass.TIMESTAMP,
+    ),
+    SensorEntityDescription(
+        key="feedback_countdown",
+        translation_key="feedback_countdown",
+        native_unit_of_measurement=UnitOfTime.SECONDS,
+        state_class=SensorStateClass.MEASUREMENT,
+    ),
+    SensorEntityDescription(
+        key="deadline_status",
+        translation_key="deadline_status",
+        device_class=SensorDeviceClass.ENUM,
+        options=[state.value for state in DeadlineStatus],
     ),
     SensorEntityDescription(
         key="event",
@@ -89,6 +111,8 @@ def _value(snapshot: OrganizationSnapshot, key: str) -> SensorValue:
         return snapshot.user_id
     if key == "my_feedback":
         return snapshot.personal_feedback.value
+    if key == "deadline_status":
+        return snapshot.deadline_status.value
     if alarm is None:
         return None
     if key == "alarm_id":
@@ -99,6 +123,8 @@ def _value(snapshot: OrganizationSnapshot, key: str) -> SensorValue:
         return alarm.started_at
     if key == "alarm_time":
         return _alarm_time(alarm.started_at)
+    if key == "feedback_deadline":
+        return alarm.feedback_deadline
     if key == "event":
         return alarm.event_name
     if key == "feedback_positive":
@@ -142,4 +168,6 @@ class GroupAlarmSensor(GroupAlarmEntity, SensorEntity):
     @property
     def native_value(self) -> SensorValue:
         """Return the state without I/O."""
+        if self.entity_description.key == "feedback_countdown":
+            return self.coordinator.feedback_countdown(self.organization_id)
         return _value(self.snapshot, self.entity_description.key)

@@ -4,12 +4,15 @@ from __future__ import annotations
 
 import asyncio
 import logging
+from collections.abc import Callable
 from dataclasses import dataclass, replace
 from datetime import UTC, datetime, timedelta
+from math import ceil
 from time import monotonic
 
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import ConfigEntryAuthFailed
+from homeassistant.helpers.event import async_track_time_interval
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .api import (
@@ -49,6 +52,7 @@ from .feedback import (
 from .mapper import normalize_alarm, select_alarm_reference
 from .models import (
     AlarmReference,
+    DeadlineStatus,
     FeedbackEligibility,
     GroupAlarmAlarm,
     GroupAlarmConfigEntry,
@@ -68,6 +72,58 @@ class _OrganizationResult:
     organization_id: int
     alarm: GroupAlarmAlarm | None = None
     error: GroupAlarmError | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class _FeedbackWindow:
+    """One locally measured feedback window for a detected alarm."""
+
+    alarm_id: int
+    deadline: datetime
+
+
+def _utcnow() -> datetime:
+    """Return the current UTC time behind one testable boundary."""
+    return datetime.now(UTC)
+
+
+def _apply_feedback_window(
+    alarm: GroupAlarmAlarm,
+    window: _FeedbackWindow | None,
+    now: datetime,
+) -> GroupAlarmAlarm:
+    """Project a local feedback window onto canonical server state."""
+    if window is None or window.alarm_id != alarm.id:
+        return alarm
+
+    if alarm.personal_feedback in (
+        PersonalFeedback.POSITIVE,
+        PersonalFeedback.NEGATIVE,
+    ):
+        return replace(
+            alarm,
+            feedback_eligibility=FeedbackEligibility.CLOSED,
+            feedback_deadline=window.deadline,
+            deadline_status=DeadlineStatus.ANSWERED,
+        )
+    if now >= window.deadline:
+        return replace(
+            alarm,
+            feedback_eligibility=FeedbackEligibility.CLOSED,
+            feedback_deadline=window.deadline,
+            deadline_status=DeadlineStatus.KNOWN_EXPIRED,
+        )
+    if alarm.feedback_eligibility is not FeedbackEligibility.CLOSED:
+        return replace(
+            alarm,
+            feedback_deadline=window.deadline,
+            deadline_status=DeadlineStatus.KNOWN_ACTIVE,
+        )
+    return replace(
+        alarm,
+        feedback_deadline=window.deadline,
+        deadline_status=DeadlineStatus.UNKNOWN,
+    )
 
 
 def _classify_error(error: GroupAlarmError) -> OrganizationError:
@@ -121,6 +177,8 @@ class GroupAlarmCoordinator(DataUpdateCoordinator[GroupAlarmCoordinatorData]):
         )
         self._feedback_locks: dict[tuple[int, int], asyncio.Lock] = {}
         self._pending_feedback: dict[tuple[int, int], bool] = {}
+        self._feedback_windows: dict[int, _FeedbackWindow] = {}
+        self._unsub_countdown: Callable[[], None] | None = None
         self._last_successful_update: datetime | None = None
 
     @property
@@ -131,6 +189,93 @@ class GroupAlarmCoordinator(DataUpdateCoordinator[GroupAlarmCoordinatorData]):
     def snapshot(self, organization_id: int) -> OrganizationSnapshot:
         """Return one organization snapshot from coordinator memory."""
         return self.data.for_organization(organization_id)
+
+    def feedback_countdown(self, organization_id: int) -> int | None:
+        """Return whole local seconds remaining, clamped at zero."""
+        try:
+            alarm = self.snapshot(organization_id).alarm
+        except (AttributeError, KeyError):
+            return None
+        if (
+            alarm is None
+            or alarm.feedback_deadline is None
+            or alarm.deadline_status
+            not in (
+                DeadlineStatus.KNOWN_ACTIVE,
+                DeadlineStatus.KNOWN_EXPIRED,
+            )
+        ):
+            return None
+        return max(
+            0,
+            ceil((alarm.feedback_deadline - _utcnow()).total_seconds()),
+        )
+
+    def _stop_countdown(self) -> None:
+        """Remove the single local countdown listener."""
+        if self._unsub_countdown is None:
+            return
+        self._unsub_countdown()
+        self._unsub_countdown = None
+
+    @staticmethod
+    def _has_running_countdown(
+        data: GroupAlarmCoordinatorData,
+        now: datetime,
+    ) -> bool:
+        """Return whether at least one feedback window still needs ticks."""
+        return any(
+            snapshot.alarm is not None
+            and snapshot.alarm.feedback_deadline is not None
+            and snapshot.alarm.deadline_status is DeadlineStatus.KNOWN_ACTIVE
+            and now < snapshot.alarm.feedback_deadline
+            for snapshot in data.organizations
+        )
+
+    def _sync_countdown(
+        self,
+        data: GroupAlarmCoordinatorData,
+        now: datetime,
+    ) -> None:
+        """Run exactly one local ticker while any feedback window is active."""
+        if self._has_running_countdown(data, now):
+            if self._unsub_countdown is None:
+                self._unsub_countdown = async_track_time_interval(
+                    self.hass,
+                    self._async_countdown_tick,
+                    timedelta(seconds=1),
+                    cancel_on_shutdown=True,
+                )
+            return
+        self._stop_countdown()
+
+    @callback
+    def _async_countdown_tick(self, now: datetime) -> None:
+        """Publish one local countdown tick without any API request."""
+        snapshots: list[OrganizationSnapshot] = []
+        changed = False
+        for snapshot in self.data.organizations:
+            alarm = snapshot.alarm
+            if alarm is None:
+                snapshots.append(snapshot)
+                continue
+            updated_alarm = _apply_feedback_window(
+                alarm,
+                self._feedback_windows.get(snapshot.organization_id),
+                now,
+            )
+            if updated_alarm != alarm:
+                changed = True
+                self._alarms[snapshot.organization_id] = updated_alarm
+                snapshots.append(replace(snapshot, alarm=updated_alarm))
+            else:
+                snapshots.append(snapshot)
+
+        data = GroupAlarmCoordinatorData(organizations=tuple(snapshots))
+        running = self._has_running_countdown(data, now)
+        if changed or running:
+            self.async_set_updated_data(data)
+        self._sync_countdown(data, now)
 
     @staticmethod
     def _feedback_key(organization_id: int, alarm_id: int) -> tuple[int, int]:
@@ -173,6 +318,9 @@ class GroupAlarmCoordinator(DataUpdateCoordinator[GroupAlarmCoordinatorData]):
             or alarm is None
             or alarm.feedback_eligibility is not FeedbackEligibility.OPEN
             or alarm.personal_feedback is not PersonalFeedback.UNKNOWN
+            or alarm.feedback_deadline is None
+            or alarm.deadline_status is not DeadlineStatus.KNOWN_ACTIVE
+            or _utcnow() >= alarm.feedback_deadline
         ):
             raise FeedbackUnavailableError
         key = self._feedback_key(organization_id, alarm.id)
@@ -234,6 +382,11 @@ class GroupAlarmCoordinator(DataUpdateCoordinator[GroupAlarmCoordinatorData]):
         """Publish canonical detail obtained after a feedback write."""
         if not self._target_is_current(alarm.organization_id, alarm.id):
             raise FeedbackSupersededError
+        alarm = _apply_feedback_window(
+            alarm,
+            self._feedback_windows.get(alarm.organization_id),
+            _utcnow(),
+        )
         self._alarms[alarm.organization_id] = alarm
         self._detail_loaded_at[alarm.organization_id] = monotonic()
         self._resolve_pending_feedback(alarm)
@@ -244,7 +397,9 @@ class GroupAlarmCoordinator(DataUpdateCoordinator[GroupAlarmCoordinatorData]):
             else snapshot
             for snapshot in self.data.organizations
         )
-        self.async_set_updated_data(GroupAlarmCoordinatorData(organizations=snapshots))
+        data = GroupAlarmCoordinatorData(organizations=snapshots)
+        self.async_set_updated_data(data)
+        self._sync_countdown(data, _utcnow())
 
     async def _async_reconcile_feedback(
         self,
@@ -357,6 +512,9 @@ class GroupAlarmCoordinator(DataUpdateCoordinator[GroupAlarmCoordinatorData]):
         response: bool,
     ) -> FeedbackDeliveryResult:
         """Choose one endpoint and reconcile without a blind second POST."""
+        current_alarm = self._validated_feedback_alarm(organization_id)
+        if current_alarm.id != alarm_id:
+            raise FeedbackSupersededError
         duration = self._arrival_duration(organization_id) if response else None
         if duration is None:
             return await self._async_send_standard_feedback(
@@ -373,6 +531,9 @@ class GroupAlarmCoordinator(DataUpdateCoordinator[GroupAlarmCoordinatorData]):
                 duration=duration,
             )
         except GroupAlarmRequestError:
+            current_alarm = self._validated_feedback_alarm(organization_id)
+            if current_alarm.id != alarm_id:
+                raise FeedbackSupersededError from None
             await self._async_send_standard_feedback(
                 organization_id=organization_id,
                 alarm_id=alarm_id,
@@ -448,9 +609,12 @@ class GroupAlarmCoordinator(DataUpdateCoordinator[GroupAlarmCoordinatorData]):
                     self._references.pop(organization_id, None)
                     self._alarms.pop(organization_id, None)
                     self._detail_loaded_at.pop(organization_id, None)
+                    self._feedback_windows.pop(organization_id, None)
                     return _OrganizationResult(organization_id=organization_id)
 
                 previous_reference = self._references.get(organization_id)
+                window = self._feedback_windows.get(organization_id)
+                window_required = window is None or window.alarm_id != reference.id
                 if (
                     previous_reference is not None
                     and previous_reference.id != reference.id
@@ -470,15 +634,29 @@ class GroupAlarmCoordinator(DataUpdateCoordinator[GroupAlarmCoordinatorData]):
                     or safety_refresh_due
                     or self._feedback_key(organization_id, reference.id)
                     in self._pending_feedback
+                    or window_required
                 )
                 if detail_required:
-                    detail = await self.client.async_get_alarm(reference.id)
+                    if window_required:
+                        detected_at = _utcnow()
+                        detail, timeout = await asyncio.gather(
+                            self.client.async_get_alarm(reference.id),
+                            self.client.async_get_organization_timeout(organization_id),
+                        )
+                        window = _FeedbackWindow(
+                            alarm_id=reference.id,
+                            deadline=detected_at + timedelta(seconds=timeout),
+                        )
+                        self._feedback_windows[organization_id] = window
+                    else:
+                        detail = await self.client.async_get_alarm(reference.id)
                     alarm = normalize_alarm(
                         detail,
                         alarm_id=reference.id,
                         organization_id=organization_id,
                         user_id=self.user.id,
                     )
+                    alarm = _apply_feedback_window(alarm, window, _utcnow())
                     self._alarms[organization_id] = alarm
                     self._detail_loaded_at[organization_id] = monotonic()
                     self._resolve_pending_feedback(alarm)
@@ -584,5 +762,13 @@ class GroupAlarmCoordinator(DataUpdateCoordinator[GroupAlarmCoordinatorData]):
                 )
             )
 
-        self._last_successful_update = datetime.now(UTC)
-        return GroupAlarmCoordinatorData(organizations=tuple(snapshots))
+        now = _utcnow()
+        self._last_successful_update = now
+        data = GroupAlarmCoordinatorData(organizations=tuple(snapshots))
+        self._sync_countdown(data, now)
+        return data
+
+    async def async_shutdown(self) -> None:
+        """Stop local countdown work before coordinator shutdown."""
+        self._stop_countdown()
+        await super().async_shutdown()

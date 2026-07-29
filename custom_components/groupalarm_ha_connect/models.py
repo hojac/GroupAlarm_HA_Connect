@@ -128,6 +128,7 @@ class GroupAlarmAlarm:
     personal_feedback_duration: int | None
     activity: AlarmActivity
     feedback_eligibility: FeedbackEligibility
+    feedback_deadline: datetime | None
     deadline_status: DeadlineStatus
     location: AlarmLocation | None
 

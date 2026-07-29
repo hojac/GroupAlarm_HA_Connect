@@ -178,28 +178,33 @@ two-stage polling design in `api-contract.md`.
    prove which alarm is returned because the operation documents pagination,
    not ordering. Correctness cannot depend on undocumented ordering.
 
-## Open questions and required real fixtures
+## Phase 4 evidence and remaining questions
 
-The following questions are blocked until anonymized current payloads from the
-same real alarm are available:
+On 2026-07-29, a same-alarm detail sequence was reviewed outside the
+repository: the matching user record changed from `WAITING` to `TIMEDOUT`, and
+the organization timeout endpoint returned an integer duration. No raw
+response or personal content was committed. The product owner then defined the
+Home-Assistant cutoff explicitly as local alarm-detection time plus that
+timeout value.
 
-1. Which absolute timestamp, if any, is the personal feedback deadline?
-2. Is `OrganizationTimeout.timeout` measured from `Alarm.startDate`, an
+The following server-side questions remain open but do not block that local
+safety cutoff:
+
+1. Which absolute server timestamp, if any, is the personal feedback deadline?
+2. Is the server's `OrganizationTimeout.timeout` measured from
+   `Alarm.startDate`, an
    individual notification timestamp, or another timestamp?
-3. Which documented status or field proves that feedback remains allowed for
-   a visible alarm?
-4. What complete JSON path was meant by the arrival-related
+3. What complete JSON path was meant by the arrival-related
    `scheduledEndtime` in Issue #20?
-5. Does the production API reliably return `GET /alarms` newest-first despite
+4. Does the production API reliably return `GET /alarms` newest-first despite
    the missing ordering contract?
-6. Which exact app-feedback `4xx` responses guarantee that no answer was
+5. Which exact app-feedback `4xx` responses guarantee that no answer was
    accepted and therefore permit an immediate messaging fallback?
 
-Required anonymized cases are: new unanswered, positive answered, negative
-answered, known active deadline, expired deadline, closed/aborted but visible,
-missing location, missing deadline and a second organization. For each alarm,
-capture the list form, detail form with `update_for_user=true`, organization
-timeout response and the subsequent server-confirmed feedback state.
+Remaining anonymized cases include negative answered, closed/aborted but
+visible, missing location and a second organization. For each alarm, capture
+the list form, detail form with `update_for_user=true` and subsequent
+server-confirmed feedback state.
 
 Use `scripts/anonymize_fixture.py` before committing any capture. The tool
 removes token-bearing keys, deterministically pseudonymizes identifiers and
@@ -208,11 +213,12 @@ JWT values. Its output still requires human review because arbitrary
 free-form or previously unknown fields cannot be proven safe by key matching
 alone.
 
-## Phase 0 decision
+## Phase decision
 
-The API and state foundation can proceed. Production implementation of the
-deadline, countdown and feedback-button availability remains blocked. Those
-states must stay explicitly unknown until the missing semantics are evidenced.
+The server's absolute deadline remains unknown. Production implementation may
+nevertheless use the explicitly defined local detection-based deadline.
+Feedback availability requires both the matching canonical state and a local
+countdown greater than zero.
 
 ## Phase 5 platform-source refresh
 
