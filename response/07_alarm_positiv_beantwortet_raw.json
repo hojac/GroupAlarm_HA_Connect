@@ -1,0 +1,1003 @@
+{
+	"id": 6389006,
+	"message": "LG Luchem:  # BAB-4 # (LGW>DÜR) # OES # Ölspur,Pol v Ort / Motorplatzer\n\n",
+	"mode": "best-effort",
+	"startDate": "2026-07-24T23:47:52.602Z",
+	"endDate": "2026-07-25T00:03:47.074Z",
+	"event": {
+		"id": 6556044,
+		"name": "1260041181",
+		"startDate": "2026-07-24T23:47:52.602Z",
+		"endDate": "2026-07-25T00:36:43.645Z",
+		"organizationID": 2032,
+		"archived": false,
+		"abort": null,
+		"severity": null
+	},
+	"organizationID": 2032,
+	"alarmResources": {
+		"scenarios": [
+			{
+				"id": 3640,
+				"name": "Einsatzabteilung",
+				"description": "Einsatzabteilung Löschgruppe Luchem",
+				"units": [
+					{
+						"id": 3761,
+						"organizationID": 2032,
+						"name": "Löschgruppe Luchem",
+						"description": "Löschgruppe Luchem",
+						"categoryID": null,
+						"isLocked": true,
+						"unitParts": [
+							{
+								"id": 125454,
+								"label": {
+									"id": 2802,
+									"organizationID": 2032,
+									"name": "EA",
+									"description": "Mitglieder der Einsatzabteilung",
+									"color": "#000000",
+									"assignees": [
+										12857,
+										1459,
+										10800,
+										12907,
+										13054,
+										13279,
+										13281,
+										13285,
+										13028,
+										13280,
+										13282,
+										13306,
+										13278,
+										13581,
+										13583,
+										14223,
+										19191,
+										19250,
+										14258,
+										19192,
+										277600,
+										59977,
+										164206,
+										32780,
+										310710,
+										310711
+									],
+									"pauseableUsers": null,
+									"substitute": null,
+									"priority": 0,
+									"minimumUsers": null,
+									"availableUsers": null,
+									"smartLabelConfiguration": null
+								},
+								"amount": -1,
+								"unitID": 3761,
+								"userID": 0,
+								"isSubstitute": false,
+								"substitutedAmount": 0
+							},
+							{
+								"id": 125455,
+								"label": {
+									"id": 9728,
+									"organizationID": 2032,
+									"name": "Unterstützungsabteilung",
+									"description": "Mitglieder der Unterstützungsabteilung",
+									"color": "#000000",
+									"assignees": [
+										216684
+									],
+									"pauseableUsers": null,
+									"substitute": null,
+									"priority": 0,
+									"minimumUsers": null,
+									"availableUsers": null,
+									"smartLabelConfiguration": null
+								},
+								"amount": -1,
+								"unitID": 3761,
+								"userID": 0,
+								"isSubstitute": false,
+								"substitutedAmount": 0
+							}
+						],
+						"externalID": null,
+						"status": null,
+						"position": null
+					}
+				],
+				"organizationID": 2032,
+				"sendPosition": false,
+				"instructionCatalogID": 0,
+				"tags": {
+					"triggered_by": [
+						{
+							"id": 2091,
+							"organization_id": 553,
+							"name": "LGW_Vollalarm",
+							"description": "Langerwehe Vollalarm 2091",
+							"color": "#000000",
+							"protected": false,
+							"date_create": "2020-08-18T07:09:23.101Z",
+							"date_edit": "2020-08-24T13:50:22.798Z",
+							"organization": {
+								"id": 553,
+								"parentID": 0,
+								"name": "Gesamt Kreis Düren",
+								"description": "Kreis Düren",
+								"ownerIDs": null,
+								"state": "",
+								"tags": null,
+								"avatarURL": "https://storage.googleapis.com/groupalarm-avatars-organization-production/avatar-553-5FQxZyUX.png",
+								"timezone": "Europe/Berlin",
+								"language": "de",
+								"enforcesTwoFactorAuth": false,
+								"dataRetentionPeriod": 0
+							},
+							"scenarios": {
+								"triggered_by": [
+									{
+										"organization": {
+											"id": 2032,
+											"parentID": 2031,
+											"name": "LGW LG Luchem",
+											"description": "Löschgruppe Luchem",
+											"ownerIDs": [
+												1441,
+												3569,
+												1482,
+												10926,
+												96295
+											],
+											"state": "active",
+											"tags": [],
+											"avatarURL": "",
+											"timezone": "Europe/Berlin",
+											"language": "de",
+											"enforcesTwoFactorAuth": false,
+											"dataRetentionPeriod": 0
+										},
+										"scenario": {
+											"id": 3640,
+											"name": "Einsatzabteilung",
+											"description": "Einsatzabteilung Löschgruppe Luchem",
+											"units": null,
+											"organizationID": 2032,
+											"sendPosition": false,
+											"instructionCatalogID": 0,
+											"tags": {
+												"triggered_by": null,
+												"triggering": null
+											},
+											"isLocked": false
+										}
+									},
+									{
+										"organization": {
+											"id": 2745,
+											"parentID": 2031,
+											"name": "LGW LG Langerwehe",
+											"description": "Löschgruppe Langerwehe",
+											"ownerIDs": [
+												1441,
+												3569,
+												1482,
+												10926,
+												96295
+											],
+											"state": "active",
+											"tags": [],
+											"avatarURL": "",
+											"timezone": "Europe/Berlin",
+											"language": "de",
+											"enforcesTwoFactorAuth": false,
+											"dataRetentionPeriod": 0
+										},
+										"scenario": {
+											"id": 6845,
+											"name": "Einsatzabteilung",
+											"description": "Einsatzabteilung Löschgruppe Langerwehe",
+											"units": null,
+											"organizationID": 2745,
+											"sendPosition": false,
+											"instructionCatalogID": 0,
+											"tags": {
+												"triggered_by": null,
+												"triggering": null
+											},
+											"isLocked": false
+										}
+									},
+									{
+										"organization": {
+											"id": 2746,
+											"parentID": 2031,
+											"name": "LGW LG Heistern",
+											"description": "Löschgruppe Heistern",
+											"ownerIDs": [
+												1441,
+												3569,
+												1482,
+												10926,
+												96295
+											],
+											"state": "active",
+											"tags": [],
+											"avatarURL": "",
+											"timezone": "Europe/Berlin",
+											"language": "de",
+											"enforcesTwoFactorAuth": false,
+											"dataRetentionPeriod": 0
+										},
+										"scenario": {
+											"id": 8601,
+											"name": "Einsatzabteilung",
+											"description": "Einsatzabteilung Löschgruppe Heistern",
+											"units": null,
+											"organizationID": 2746,
+											"sendPosition": false,
+											"instructionCatalogID": 0,
+											"tags": {
+												"triggered_by": null,
+												"triggering": null
+											},
+											"isLocked": false
+										}
+									},
+									{
+										"organization": {
+											"id": 2747,
+											"parentID": 2031,
+											"name": "LGW LG Schlich",
+											"description": "Löschgruppe Schlich",
+											"ownerIDs": [
+												1441,
+												3569,
+												1482,
+												10926,
+												96295
+											],
+											"state": "active",
+											"tags": [],
+											"avatarURL": "",
+											"timezone": "Europe/Berlin",
+											"language": "de",
+											"enforcesTwoFactorAuth": false,
+											"dataRetentionPeriod": 0
+										},
+										"scenario": {
+											"id": 8607,
+											"name": "Einsatzabteilung",
+											"description": "Einsatzabteilung Löschgruppe Schlich",
+											"units": null,
+											"organizationID": 2747,
+											"sendPosition": false,
+											"instructionCatalogID": 0,
+											"tags": {
+												"triggered_by": null,
+												"triggering": null
+											},
+											"isLocked": false
+										}
+									},
+									{
+										"organization": {
+											"id": 2748,
+											"parentID": 2031,
+											"name": "LGW LG Obergeich",
+											"description": "Löschgruppe Obergeich",
+											"ownerIDs": [
+												1441,
+												3569,
+												1482,
+												10926,
+												96295
+											],
+											"state": "active",
+											"tags": [],
+											"avatarURL": "",
+											"timezone": "Europe/Berlin",
+											"language": "de",
+											"enforcesTwoFactorAuth": false,
+											"dataRetentionPeriod": 0
+										},
+										"scenario": {
+											"id": 8606,
+											"name": "Einsatzabteilung",
+											"description": "Einsatzabteilung Löschgruppe Obergeich",
+											"units": null,
+											"organizationID": 2748,
+											"sendPosition": false,
+											"instructionCatalogID": 0,
+											"tags": {
+												"triggered_by": null,
+												"triggering": null
+											},
+											"isLocked": false
+										}
+									},
+									{
+										"organization": {
+											"id": 2749,
+											"parentID": 2031,
+											"name": "LGW LG Jüngersdorf",
+											"description": "Löschgruppe Jüngersdorf",
+											"ownerIDs": [
+												1441,
+												3569,
+												1482,
+												10926,
+												96295
+											],
+											"state": "active",
+											"tags": [],
+											"avatarURL": "",
+											"timezone": "Europe/Berlin",
+											"language": "de",
+											"enforcesTwoFactorAuth": false,
+											"dataRetentionPeriod": 0
+										},
+										"scenario": {
+											"id": 8605,
+											"name": "Einsatzabteilung",
+											"description": "Einsatzabteilung Löschgruppe Jüngersdorf",
+											"units": null,
+											"organizationID": 2749,
+											"sendPosition": false,
+											"instructionCatalogID": 0,
+											"tags": {
+												"triggered_by": null,
+												"triggering": null
+											},
+											"isLocked": false
+										}
+									}
+								],
+								"triggering": []
+							},
+							"alarm_resource_templates": [],
+							"allowed_organizations": [
+								2029
+							]
+						},
+						{
+							"id": 2085,
+							"organization_id": 553,
+							"name": "LGW_LG-Luchem",
+							"description": "LG Luchem 2085",
+							"color": "#000000",
+							"protected": false,
+							"date_create": "2020-08-18T07:02:44.722Z",
+							"date_edit": "2020-08-18T07:11:41.184Z",
+							"organization": {
+								"id": 553,
+								"parentID": 0,
+								"name": "Gesamt Kreis Düren",
+								"description": "Kreis Düren",
+								"ownerIDs": null,
+								"state": "",
+								"tags": null,
+								"avatarURL": "https://storage.googleapis.com/groupalarm-avatars-organization-production/avatar-553-5FQxZyUX.png",
+								"timezone": "Europe/Berlin",
+								"language": "de",
+								"enforcesTwoFactorAuth": false,
+								"dataRetentionPeriod": 0
+							},
+							"scenarios": {
+								"triggered_by": [
+									{
+										"organization": {
+											"id": 2032,
+											"parentID": 2031,
+											"name": "LGW LG Luchem",
+											"description": "Löschgruppe Luchem",
+											"ownerIDs": [
+												1441,
+												3569,
+												1482,
+												10926,
+												96295
+											],
+											"state": "active",
+											"tags": [],
+											"avatarURL": "",
+											"timezone": "Europe/Berlin",
+											"language": "de",
+											"enforcesTwoFactorAuth": false,
+											"dataRetentionPeriod": 0
+										},
+										"scenario": {
+											"id": 3640,
+											"name": "Einsatzabteilung",
+											"description": "Einsatzabteilung Löschgruppe Luchem",
+											"units": null,
+											"organizationID": 2032,
+											"sendPosition": false,
+											"instructionCatalogID": 0,
+											"tags": {
+												"triggered_by": null,
+												"triggering": null
+											},
+											"isLocked": false
+										}
+									}
+								],
+								"triggering": []
+							},
+							"alarm_resource_templates": [],
+							"allowed_organizations": [
+								2029
+							]
+						},
+						{
+							"id": 2089,
+							"organization_id": 553,
+							"name": "LGW_LZ-West",
+							"description": "LZ West 2089",
+							"color": "#000000",
+							"protected": false,
+							"date_create": "2020-08-18T07:04:09.882Z",
+							"date_edit": "2020-08-24T13:50:09.668Z",
+							"organization": {
+								"id": 553,
+								"parentID": 0,
+								"name": "Gesamt Kreis Düren",
+								"description": "Kreis Düren",
+								"ownerIDs": null,
+								"state": "",
+								"tags": null,
+								"avatarURL": "https://storage.googleapis.com/groupalarm-avatars-organization-production/avatar-553-5FQxZyUX.png",
+								"timezone": "Europe/Berlin",
+								"language": "de",
+								"enforcesTwoFactorAuth": false,
+								"dataRetentionPeriod": 0
+							},
+							"scenarios": {
+								"triggered_by": [
+									{
+										"organization": {
+											"id": 2032,
+											"parentID": 2031,
+											"name": "LGW LG Luchem",
+											"description": "Löschgruppe Luchem",
+											"ownerIDs": [
+												1441,
+												3569,
+												1482,
+												10926,
+												96295
+											],
+											"state": "active",
+											"tags": [],
+											"avatarURL": "",
+											"timezone": "Europe/Berlin",
+											"language": "de",
+											"enforcesTwoFactorAuth": false,
+											"dataRetentionPeriod": 0
+										},
+										"scenario": {
+											"id": 3640,
+											"name": "Einsatzabteilung",
+											"description": "Einsatzabteilung Löschgruppe Luchem",
+											"units": null,
+											"organizationID": 2032,
+											"sendPosition": false,
+											"instructionCatalogID": 0,
+											"tags": {
+												"triggered_by": null,
+												"triggering": null
+											},
+											"isLocked": false
+										}
+									},
+									{
+										"organization": {
+											"id": 2745,
+											"parentID": 2031,
+											"name": "LGW LG Langerwehe",
+											"description": "Löschgruppe Langerwehe",
+											"ownerIDs": [
+												1441,
+												3569,
+												1482,
+												10926,
+												96295
+											],
+											"state": "active",
+											"tags": [],
+											"avatarURL": "",
+											"timezone": "Europe/Berlin",
+											"language": "de",
+											"enforcesTwoFactorAuth": false,
+											"dataRetentionPeriod": 0
+										},
+										"scenario": {
+											"id": 6845,
+											"name": "Einsatzabteilung",
+											"description": "Einsatzabteilung Löschgruppe Langerwehe",
+											"units": null,
+											"organizationID": 2745,
+											"sendPosition": false,
+											"instructionCatalogID": 0,
+											"tags": {
+												"triggered_by": null,
+												"triggering": null
+											},
+											"isLocked": false
+										}
+									},
+									{
+										"organization": {
+											"id": 2746,
+											"parentID": 2031,
+											"name": "LGW LG Heistern",
+											"description": "Löschgruppe Heistern",
+											"ownerIDs": [
+												1441,
+												3569,
+												1482,
+												10926,
+												96295
+											],
+											"state": "active",
+											"tags": [],
+											"avatarURL": "",
+											"timezone": "Europe/Berlin",
+											"language": "de",
+											"enforcesTwoFactorAuth": false,
+											"dataRetentionPeriod": 0
+										},
+										"scenario": {
+											"id": 8601,
+											"name": "Einsatzabteilung",
+											"description": "Einsatzabteilung Löschgruppe Heistern",
+											"units": null,
+											"organizationID": 2746,
+											"sendPosition": false,
+											"instructionCatalogID": 0,
+											"tags": {
+												"triggered_by": null,
+												"triggering": null
+											},
+											"isLocked": false
+										}
+									}
+								],
+								"triggering": []
+							},
+							"alarm_resource_templates": [],
+							"allowed_organizations": [
+								2029
+							]
+						}
+					],
+					"triggering": []
+				},
+				"isLocked": true
+			}
+		],
+		"units": [],
+		"labels": [],
+		"users": []
+	},
+	"feedback": [
+		{
+			"alarmID": 6389006,
+			"userID": 216684,
+			"unitID": 3761,
+			"labelID": 9728,
+			"feedback": false,
+			"state": "UNAVAILABLE",
+			"responseTime": "2026-07-24T23:47:53.011Z",
+			"userDistance": 0,
+			"userDuration": 0,
+			"userComment": null
+		},
+		{
+			"alarmID": 6389006,
+			"userID": 13306,
+			"unitID": 3761,
+			"labelID": 2802,
+			"feedback": false,
+			"state": "UNAVAILABLE",
+			"responseTime": "2026-07-24T23:47:53.025Z",
+			"userDistance": 0,
+			"userDuration": 0,
+			"userComment": null
+		},
+		{
+			"alarmID": 6389006,
+			"userID": 310711,
+			"unitID": 3761,
+			"labelID": 2802,
+			"feedback": false,
+			"state": "UNAVAILABLE",
+			"responseTime": "2026-07-24T23:47:53.033Z",
+			"userDistance": 0,
+			"userDuration": 0,
+			"userComment": null
+		},
+		{
+			"alarmID": 6389006,
+			"userID": 164206,
+			"unitID": 3761,
+			"labelID": 2802,
+			"feedback": false,
+			"state": "RESPONDED",
+			"responseTime": "2026-07-24T23:48:22.5Z",
+			"userDistance": 0,
+			"userDuration": 0,
+			"userComment": null
+		},
+		{
+			"alarmID": 6389006,
+			"userID": 310710,
+			"unitID": 3761,
+			"labelID": 2802,
+			"feedback": true,
+			"state": "RESPONDED",
+			"responseTime": "2026-07-24T23:49:16.685Z",
+			"userDistance": 17,
+			"userDuration": 0,
+			"userComment": null
+		},
+		{
+			"alarmID": 6389006,
+			"userID": 10800,
+			"unitID": 3761,
+			"labelID": 2802,
+			"feedback": false,
+			"state": "RESPONDED",
+			"responseTime": "2026-07-24T23:49:33.058Z",
+			"userDistance": 0,
+			"userDuration": 0,
+			"userComment": null
+		},
+		{
+			"alarmID": 6389006,
+			"userID": 19192,
+			"unitID": 3761,
+			"labelID": 2802,
+			"feedback": false,
+			"state": "RESPONDED",
+			"responseTime": "2026-07-24T23:50:47.374Z",
+			"userDistance": 0,
+			"userDuration": 0,
+			"userComment": null
+		},
+		{
+			"alarmID": 6389006,
+			"userID": 19250,
+			"unitID": 3761,
+			"labelID": 2802,
+			"feedback": false,
+			"state": "TIMEDOUT",
+			"responseTime": "2026-07-25T00:02:54.438Z",
+			"userDistance": 0,
+			"userDuration": 0,
+			"userComment": null
+		},
+		{
+			"alarmID": 6389006,
+			"userID": 59977,
+			"unitID": 3761,
+			"labelID": 2802,
+			"feedback": false,
+			"state": "TIMEDOUT",
+			"responseTime": "2026-07-25T00:02:54.445Z",
+			"userDistance": 0,
+			"userDuration": 0,
+			"userComment": null
+		},
+		{
+			"alarmID": 6389006,
+			"userID": 13279,
+			"unitID": 3761,
+			"labelID": 2802,
+			"feedback": false,
+			"state": "UNAVAILABLE",
+			"responseTime": "2026-07-24T23:47:53.032Z",
+			"userDistance": 0,
+			"userDuration": 0,
+			"userComment": null
+		},
+		{
+			"alarmID": 6389006,
+			"userID": 277600,
+			"unitID": 3761,
+			"labelID": 2802,
+			"feedback": false,
+			"state": "UNAVAILABLE",
+			"responseTime": "2026-07-24T23:47:53.037Z",
+			"userDistance": 0,
+			"userDuration": 0,
+			"userComment": null
+		},
+		{
+			"alarmID": 6389006,
+			"userID": 12857,
+			"unitID": 3761,
+			"labelID": 2802,
+			"feedback": true,
+			"state": "RESPONDED",
+			"responseTime": "2026-07-24T23:48:17.948Z",
+			"userDistance": 17,
+			"userDuration": 0,
+			"userComment": null
+		},
+		{
+			"alarmID": 6389006,
+			"userID": 13028,
+			"unitID": 3761,
+			"labelID": 2802,
+			"feedback": false,
+			"state": "RESPONDED",
+			"responseTime": "2026-07-24T23:48:31.007Z",
+			"userDistance": 0,
+			"userDuration": 0,
+			"userComment": null
+		},
+		{
+			"alarmID": 6389006,
+			"userID": 13281,
+			"unitID": 3761,
+			"labelID": 2802,
+			"feedback": false,
+			"state": "RESPONDED",
+			"responseTime": "2026-07-24T23:48:56.334Z",
+			"userDistance": 0,
+			"userDuration": 0,
+			"userComment": null
+		},
+		{
+			"alarmID": 6389006,
+			"userID": 14258,
+			"unitID": 3761,
+			"labelID": 2802,
+			"feedback": false,
+			"state": "TIMEDOUT",
+			"responseTime": "2026-07-25T00:02:54.432Z",
+			"userDistance": 0,
+			"userDuration": 0,
+			"userComment": null
+		},
+		{
+			"alarmID": 6389006,
+			"userID": 14223,
+			"unitID": 3761,
+			"labelID": 2802,
+			"feedback": false,
+			"state": "TIMEDOUT",
+			"responseTime": "2026-07-25T00:02:54.446Z",
+			"userDistance": 0,
+			"userDuration": 0,
+			"userComment": null
+		},
+		{
+			"alarmID": 6389006,
+			"userID": 13280,
+			"unitID": 3761,
+			"labelID": 2802,
+			"feedback": false,
+			"state": "UNAVAILABLE",
+			"responseTime": "2026-07-24T23:47:53.025Z",
+			"userDistance": 0,
+			"userDuration": 0,
+			"userComment": null
+		},
+		{
+			"alarmID": 6389006,
+			"userID": 13583,
+			"unitID": 3761,
+			"labelID": 2802,
+			"feedback": false,
+			"state": "UNAVAILABLE",
+			"responseTime": "2026-07-24T23:47:53.032Z",
+			"userDistance": 0,
+			"userDuration": 0,
+			"userComment": null
+		},
+		{
+			"alarmID": 6389006,
+			"userID": 13282,
+			"unitID": 3761,
+			"labelID": 2802,
+			"feedback": false,
+			"state": "UNAVAILABLE",
+			"responseTime": "2026-07-24T23:47:53.037Z",
+			"userDistance": 0,
+			"userDuration": 0,
+			"userComment": null
+		},
+		{
+			"alarmID": 6389006,
+			"userID": 13054,
+			"unitID": 3761,
+			"labelID": 2802,
+			"feedback": false,
+			"state": "UNAVAILABLE",
+			"responseTime": "2026-07-24T23:47:53.041Z",
+			"userDistance": 0,
+			"userDuration": 0,
+			"userComment": null
+		},
+		{
+			"alarmID": 6389006,
+			"userID": 13581,
+			"unitID": 3761,
+			"labelID": 2802,
+			"feedback": false,
+			"state": "RESPONDED",
+			"responseTime": "2026-07-24T23:48:16.548Z",
+			"userDistance": 0,
+			"userDuration": 0,
+			"userComment": null
+		},
+		{
+			"alarmID": 6389006,
+			"userID": 32780,
+			"unitID": 3761,
+			"labelID": 2802,
+			"feedback": false,
+			"state": "RESPONDED",
+			"responseTime": "2026-07-24T23:48:32.354Z",
+			"userDistance": 0,
+			"userDuration": 0,
+			"userComment": null
+		},
+		{
+			"alarmID": 6389006,
+			"userID": 19191,
+			"unitID": 3761,
+			"labelID": 2802,
+			"feedback": false,
+			"state": "RESPONDED",
+			"responseTime": "2026-07-24T23:48:33.717Z",
+			"userDistance": 0,
+			"userDuration": 0,
+			"userComment": null
+		},
+		{
+			"alarmID": 6389006,
+			"userID": 1459,
+			"unitID": 3761,
+			"labelID": 2802,
+			"feedback": true,
+			"state": "RESPONDED",
+			"responseTime": "2026-07-24T23:49:33.269Z",
+			"userDistance": 0,
+			"userDuration": 2,
+			"userComment": null
+		},
+		{
+			"alarmID": 6389006,
+			"userID": 13285,
+			"unitID": 3761,
+			"labelID": 2802,
+			"feedback": true,
+			"state": "RESPONDED",
+			"responseTime": "2026-07-24T23:50:16.621Z",
+			"userDistance": 0,
+			"userDuration": 0,
+			"userComment": null
+		},
+		{
+			"alarmID": 6389006,
+			"userID": 13278,
+			"unitID": 3761,
+			"labelID": 2802,
+			"feedback": false,
+			"state": "TIMEDOUT",
+			"responseTime": "2026-07-25T00:02:54.442Z",
+			"userDistance": 0,
+			"userDuration": 0,
+			"userComment": null
+		},
+		{
+			"alarmID": 6389006,
+			"userID": 12907,
+			"unitID": 3761,
+			"labelID": 2802,
+			"feedback": false,
+			"state": "TIMEDOUT",
+			"responseTime": "2026-07-25T00:02:54.451Z",
+			"userDistance": 0,
+			"userDuration": 0,
+			"userComment": null
+		}
+	],
+	"alarmOptions": {
+		"possiblePositiveFeedbackComments": [],
+		"possibleNegativeFeedbackComments": []
+	},
+	"success": true,
+	"alarmStrength": {
+		"general": {
+			"amount": 1,
+			"labelStrengths": [
+				{
+					"amount": 1,
+					"label": {
+						"id": 2807,
+						"organizationID": 2032,
+						"name": "LKW",
+						"description": "Führerschein LKW",
+						"color": "#0000ff",
+						"assignees": null,
+						"pauseableUsers": null,
+						"substitute": null,
+						"priority": 0,
+						"minimumUsers": null,
+						"availableUsers": null,
+						"smartLabelConfiguration": null
+					}
+				}
+			]
+		},
+		"soldier": {
+			"amount": 3,
+			"labelStrengths": [
+				{
+					"amount": 1,
+					"label": {
+						"id": 2807,
+						"organizationID": 2032,
+						"name": "LKW",
+						"description": "Führerschein LKW",
+						"color": "#0000ff",
+						"assignees": null,
+						"pauseableUsers": null,
+						"substitute": null,
+						"priority": 0,
+						"minimumUsers": null,
+						"availableUsers": null,
+						"smartLabelConfiguration": null
+					}
+				}
+			]
+		},
+		"summary": {
+			"amount": 4,
+			"labelStrengths": [
+				{
+					"amount": 2,
+					"label": {
+						"id": 2807,
+						"organizationID": 2032,
+						"name": "LKW",
+						"description": "Führerschein LKW",
+						"color": "#0000ff",
+						"assignees": null,
+						"pauseableUsers": null,
+						"substitute": null,
+						"priority": 0,
+						"minimumUsers": null,
+						"availableUsers": null,
+						"smartLabelConfiguration": null
+					}
+				}
+			]
+		}
+	},
+	"feedbackPercentage": {
+		"positive": 14.814814814814813,
+		"negative": 29.629629629629626,
+		"unknown": 55.55555555555556
+	},
+	"feedbackQuantity": {
+		"positive": 4,
+		"negative": 8,
+		"unknown": 15
+	},
+	"optionalContent": {
+		"address": "BAB-4, (LGW>DÜR)",
+		"latitude": 50.8353,
+		"longitude": 6.423025
+	},
+	"creatorName": "LGW_LG-Luchem",
+	"creatorID": 2085,
+	"creatorType": "tag"
+}
