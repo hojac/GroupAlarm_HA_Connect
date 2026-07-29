@@ -11,6 +11,8 @@ All notable changes to this project are documented in this file.
   registry entries.
 - Derive active alarm state independently from top-level `alarm.endDate` and
   `event.abort`, without coupling it to feedback or countdown state.
+- Map optional alarm address and validated WGS84 coordinates from
+  `optionalContent` without retaining stale or malformed locations.
 
 ## [0.5.1] - 2026-07-29
 

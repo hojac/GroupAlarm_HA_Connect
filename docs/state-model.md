@@ -198,17 +198,18 @@ The local ticker is separate from API polling and owned once per config entry.
 
 Location normalization is optional:
 
-- accept only fixture-proven JSON paths;
+- accept only top-level `optionalContent.address`, `latitude`, `longitude` and
+  optional `coordinateFormat`;
 - parse latitude/longitude as finite numbers in valid ranges;
 - require both coordinates before exposing a GPS position;
+- accept only absent/default or explicit `WGS84` coordinate format;
 - never invent `0,0` or reuse stale coordinates for a new alarm;
 - allow address and coordinates to be absent;
 - do not include raw address, coordinates or alarm content in diagnostics.
 
-The location tracker identity remains unavailable. The official
-`optionalContent` schema is untyped and no anonymized real location fixture has
-yet proven its JSON paths. The legacy integration's fallback paths are
-therefore not copied into the normalizer.
+The location tracker is available only with a complete valid coordinate pair.
+An optional non-empty address becomes its location name. The legacy
+integration's nested fallback paths are not copied into the normalizer.
 
 ## Implemented Phase 3 entity model
 
@@ -216,8 +217,8 @@ The implemented read-only entity set currently exposes alarm ID, message,
 start timestamp, compatibility alarm time, event name, aggregate feedback
 counts, server-confirmed personal feedback, and a disabled-by-default user-ID
 diagnostic sensor. Alarm activity is projected from the independently
-normalized top-level alarm close/abort state. The location tracker remains
-unavailable until its source mapping is proven.
+normalized top-level alarm close/abort state. The location tracker projects
+only the separately normalized current-alarm WGS84 location.
 
 Phase 3 adds translated positive and negative button entities, server-confirmed
 reconciliation, optional arrival-duration delivery, pending-write protection

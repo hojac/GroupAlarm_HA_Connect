@@ -220,6 +220,7 @@ def test_activity_and_location_entities_preserve_unknown_state(
     assert tracker.available is True
     assert tracker.latitude == 52.1
     assert tracker.longitude == 13.2
+    assert tracker.location_name == "Musterstraße"
 
     inactive_alarm = replace(located_alarm, activity=AlarmActivity.INACTIVE)
     coordinator.data = GroupAlarmCoordinatorData(
@@ -230,3 +231,4 @@ def test_activity_and_location_entities_preserve_unknown_state(
     coordinator.data = GroupAlarmCoordinatorData(organizations=(_snapshot(None),))
     assert tracker.latitude is None
     assert tracker.longitude is None
+    assert tracker.location_name is None

@@ -63,3 +63,11 @@ class GroupAlarmLocationTracker(GroupAlarmEntity, TrackerEntity):
         if alarm is None or alarm.location is None:
             return None
         return alarm.location.longitude
+
+    @property
+    def location_name(self) -> str | None:
+        """Return the optional normalized address as the tracker state."""
+        alarm = self.snapshot.alarm
+        if alarm is None or alarm.location is None:
+            return None
+        return alarm.location.address

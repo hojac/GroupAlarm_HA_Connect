@@ -144,6 +144,9 @@ two-stage polling design in `api-contract.md`.
 - `AnswerData.duration` is traffic duration to the organization in minutes.
 - `Feedback.userDuration` is the canonical detail field for the user's traffic
   duration and may confirm a previously requested arrival duration.
+- `Alarm.optionalContent.address`, `latitude` and `longitude` are the reviewed
+  top-level location paths. Coordinates use the absent/default or explicit
+  `WGS84` format.
 - `Device` responses contain `pushToken`; the integration must immediately
   reduce those payloads to non-sensitive selection data.
 
@@ -186,6 +189,11 @@ the organization timeout endpoint returned an integer duration. No raw
 response or personal content was committed. The product owner then defined the
 Home-Assistant cutoff explicitly as local alarm-detection time plus that
 timeout value.
+
+The same field-review cycle confirmed top-level `alarm.endDate` as the alarm
+close signal and top-level `optionalContent.address`, `latitude`, `longitude`
+and `coordinateFormat: WGS84` as the location source. The real address,
+coordinates and alarm identifiers remain outside the repository.
 
 The following server-side questions remain open but do not block that local
 safety cutoff:

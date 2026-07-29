@@ -144,6 +144,7 @@ def _detail(
     feedback_state: str = "WAITING",
     closed: bool = False,
     aborted: bool = False,
+    optional_content: dict[str, object] | None = None,
 ) -> dict[str, object]:
     feedback: list[dict[str, object]] = [
         {
@@ -187,6 +188,8 @@ def _detail(
         event = detail["event"]
         assert isinstance(event, dict)
         event["abort"] = {"date": "2026-07-27T10:20:00Z"}
+    if optional_content is not None:
+        detail["optionalContent"] = optional_content
     return detail
 
 
@@ -475,6 +478,38 @@ async def test_new_alarm_id_replaces_canonical_state(
     assert updated.for_organization(7).alarm is not None
     assert updated.for_organization(7).alarm.id == 12
     assert client.async_get_alarm.await_count == 2
+
+
+async def test_new_alarm_without_location_clears_previous_coordinates(
+    hass: HomeAssistant,
+) -> None:
+    """Location is part of each alarm and is never copied across alarm IDs."""
+    coordinator, client = _coordinator(hass)
+    client.async_get_alarms.side_effect = (_page(11), _page(12))
+    client.async_get_alarm.side_effect = (
+        _detail(
+            11,
+            optional_content={
+                "address": "Anonymisierte Adresse",
+                "coordinateFormat": "WGS84",
+                "latitude": 50.1,
+                "longitude": 6.2,
+            },
+        ),
+        _detail(12),
+    )
+
+    coordinator.data = await coordinator._async_update_data()
+    first_alarm = coordinator.snapshot(7).alarm
+    assert first_alarm is not None
+    assert first_alarm.location is not None
+
+    coordinator.data = await coordinator._async_update_data()
+
+    second_alarm = coordinator.snapshot(7).alarm
+    assert second_alarm is not None
+    assert second_alarm.id == 12
+    assert second_alarm.location is None
 
 
 async def test_safety_refresh_reloads_unchanged_detail(

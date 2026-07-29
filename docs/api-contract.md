@@ -124,7 +124,7 @@ The response is `Alarm`. Fields consumed by the normalizer may include:
 | `event.scheduledEndtime` | date-time | Scheduled event close, not feedback deadline |
 | `event.archived` | boolean | Event archive flag |
 | `event.abort` | object | Its presence proves that the alarm is no longer active |
-| `optionalContent` | untyped | Location/content source only after fixture-backed normalization |
+| `optionalContent` | untyped | Optional address and WGS84 location source |
 | `feedback[]` | array | Per-recipient feedback records |
 | `feedbackQuantity.positive` | integer | Positive aggregate count |
 | `feedbackQuantity.negative` | integer | Negative aggregate count |
@@ -148,6 +148,14 @@ Alarm activity is mapped independently of recipient feedback: a validated
 detail without top-level `endDate` and without `event.abort` is active. A
 top-level `endDate` or the presence of `event.abort` makes it inactive. Event
 close/archive fields and feedback/deadline state do not affect this axis.
+
+Location consumes only `optionalContent.address`,
+`optionalContent.coordinateFormat`, `optionalContent.latitude` and
+`optionalContent.longitude`. The coordinate format may be absent (the documented
+default) or exactly `WGS84`. Latitude and longitude may be finite numbers or
+numeric strings within WGS84 ranges; both are required. Address is optional and
+does not make invalid or missing coordinates usable. Legacy nested location
+paths are not accepted.
 
 For the same matching `RESPONDED` record, `userDuration` is the documented
 traffic duration to the organization in minutes. It is consumed only to

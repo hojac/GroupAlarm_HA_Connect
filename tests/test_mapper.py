@@ -399,6 +399,79 @@ def test_event_abort_marks_alarm_inactive_without_alarm_end() -> None:
     assert alarm.activity is AlarmActivity.INACTIVE
 
 
+@pytest.mark.parametrize(
+    ("optional_content", "expected"),
+    [
+        (
+            {
+                "address": "Anonymisierte Adresse",
+                "coordinateFormat": "WGS84",
+                "latitude": 50.1,
+                "longitude": 6.2,
+            },
+            ("Anonymisierte Adresse", 50.1, 6.2),
+        ),
+        (
+            {
+                "address": "  ",
+                "latitude": "50.1",
+                "longitude": "6.2",
+            },
+            (None, 50.1, 6.2),
+        ),
+        ({"latitude": 50.1}, None),
+        ({"longitude": 6.2}, None),
+        ({"latitude": "nan", "longitude": 6.2}, None),
+        ({"latitude": 50.1, "longitude": "inf"}, None),
+        ({"latitude": 90.1, "longitude": 6.2}, None),
+        ({"latitude": 50.1, "longitude": -180.1}, None),
+        ({"latitude": True, "longitude": 6.2}, None),
+        (
+            {
+                "coordinateFormat": "UTM",
+                "latitude": 50.1,
+                "longitude": 6.2,
+            },
+            None,
+        ),
+        (
+            {
+                "location": {
+                    "address": "Legacy fallback",
+                    "latitude": 50.1,
+                    "longitude": 6.2,
+                }
+            },
+            None,
+        ),
+    ],
+)
+def test_location_uses_only_valid_top_level_wgs84_fields(
+    optional_content: dict[str, object],
+    expected: tuple[str | None, float, float] | None,
+) -> None:
+    """Location never guesses legacy paths or malformed coordinates."""
+    payload = _detail()
+    payload["optionalContent"] = optional_content
+
+    alarm = normalize_alarm(
+        payload,
+        alarm_id=11,
+        organization_id=7,
+        user_id=41,
+    )
+
+    if expected is None:
+        assert alarm.location is None
+    else:
+        assert alarm.location is not None
+        assert (
+            alarm.location.address,
+            alarm.location.latitude,
+            alarm.location.longitude,
+        ) == expected
+
+
 def test_conflicting_confirmed_feedback_is_rejected() -> None:
     with pytest.raises(GroupAlarmResponseError):
         normalize_alarm(

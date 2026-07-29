@@ -236,9 +236,26 @@ def _personal_feedback(
     return PersonalFeedback.UNKNOWN, None, eligibility
 
 
-def _location(_value: object) -> AlarmLocation | None:
-    """Keep location blocked until a real fixture proves its JSON paths."""
-    return None
+def _location(value: object) -> AlarmLocation | None:
+    """Normalize the proven top-level WGS84 fields in optionalContent."""
+    if not isinstance(value, dict):
+        return None
+    coordinate_format = value.get("coordinateFormat")
+    if coordinate_format not in (None, "WGS84"):
+        return None
+    location = validate_coordinates(
+        value.get("latitude"),
+        value.get("longitude"),
+    )
+    if location is None:
+        return None
+    raw_address = value.get("address")
+    address = raw_address.strip() if isinstance(raw_address, str) else ""
+    return AlarmLocation(
+        address=address or None,
+        latitude=location.latitude,
+        longitude=location.longitude,
+    )
 
 
 def normalize_alarm(
@@ -333,7 +350,7 @@ def normalize_alarm(
 
 
 def validate_coordinates(latitude: object, longitude: object) -> AlarmLocation | None:
-    """Validate a future fixture-backed coordinate mapping."""
+    """Validate one WGS84 coordinate pair."""
     if (
         isinstance(latitude, bool)
         or isinstance(longitude, bool)
