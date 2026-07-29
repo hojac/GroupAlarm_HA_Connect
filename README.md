@@ -8,9 +8,9 @@ Home-Assistant-Entitäten bereit.
 > [!IMPORTANT]
 > Dieses Projekt steht in keiner offiziellen Verbindung zur GroupAlarm GmbH.
 > Version `0.5.1` ist ein vollständiger Neubau. Die Rückmeldefrist ist eine
-> bewusst lokale Frist ab Erkennung einer neuen Alarm-ID. Alarmaktivität und
-> Einsatzort bleiben unbekannt beziehungsweise nicht verfügbar, solange ihre
-> realen JSON-Pfade nicht abschließend belegt sind.
+> bewusst lokale Frist ab Erkennung einer neuen Alarm-ID. Der Einsatzort bleibt
+> nicht verfügbar, solange seine realen JSON-Pfade nicht abschließend belegt
+> sind.
 
 ## Funktionsumfang
 
@@ -135,7 +135,7 @@ Installation.
 
 | Typ | Entität | Verhalten |
 |---|---|---|
-| Binary Sensor | Aktive Alarmierung | `unknown`, bis offene/geschlossene Real-Payloads die Statuszuordnung belegen |
+| Binary Sensor | Aktive Alarmierung | `on`, solange `alarm.endDate` fehlt und kein `event.abort` vorliegt; danach `off` |
 | Button | Komme | verfügbar nur bei `WAITING`, unbekannter eigener Antwort und Countdown größer `0` |
 | Button | Komme nicht | gleiche Sicherheitsbedingung wie `Komme` |
 | Device Tracker | Einsatzort | unavailable, bis belegte und gültige Koordinaten vorliegen |

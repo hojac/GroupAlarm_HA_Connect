@@ -48,13 +48,14 @@ last alarm may remain visible after close, abort or timeout.
 
 | State | Meaning |
 |---|---|
-| `ACTIVE` | A documented/fixture-proven alarm or event status proves activity |
-| `INACTIVE` | A documented/fixture-proven status proves close/abort/inactivity |
+| `ACTIVE` | Validated detail has no top-level `alarm.endDate` and no `event.abort` |
+| `INACTIVE` | Top-level `alarm.endDate` is set or `event.abort` is present |
 | `UNKNOWN` | Available fields do not prove either state |
 
 An alarm message, alarm existence, future timestamp or running countdown is not
-an activity signal. The exact active/inactive mapper remains blocked until
-real list/detail fixtures prove the status shape, including `event.abort`.
+an activity signal. Event close/archive fields and every personal-feedback or
+deadline state are also excluded from this axis. An invalid close or abort
+shape rejects the payload instead of guessing an activity state.
 
 ### Feedback eligibility
 
@@ -204,18 +205,19 @@ Location normalization is optional:
 - allow address and coordinates to be absent;
 - do not include raw address, coordinates or alarm content in diagnostics.
 
-Phase 2 creates the location tracker identity but keeps it unavailable. The
-official `optionalContent` schema is untyped and no anonymized real location
-fixture has yet proven its JSON paths. The legacy integration's fallback paths
-are therefore not copied into the normalizer.
+The location tracker identity remains unavailable. The official
+`optionalContent` schema is untyped and no anonymized real location fixture has
+yet proven its JSON paths. The legacy integration's fallback paths are
+therefore not copied into the normalizer.
 
 ## Implemented Phase 3 entity model
 
 The implemented read-only entity set currently exposes alarm ID, message,
 start timestamp, compatibility alarm time, event name, aggregate feedback
 counts, server-confirmed personal feedback, and a disabled-by-default user-ID
-diagnostic sensor. Activity remains an unknown binary-sensor state, and the
-location tracker remains unavailable, until their source mappings are proven.
+diagnostic sensor. Alarm activity is projected from the independently
+normalized top-level alarm close/abort state. The location tracker remains
+unavailable until its source mapping is proven.
 
 Phase 3 adds translated positive and negative button entities, server-confirmed
 reconciliation, optional arrival-duration delivery, pending-write protection

@@ -58,6 +58,7 @@ from custom_components.groupalarm_ha_connect.feedback import (
     FeedbackUnavailableError,
 )
 from custom_components.groupalarm_ha_connect.models import (
+    AlarmActivity,
     DeadlineStatus,
     FeedbackEligibility,
     GroupAlarmCoordinatorData,
@@ -436,6 +437,29 @@ async def test_changed_fingerprint_refreshes_same_alarm_detail(
     await coordinator._async_update_data()
 
     assert client.async_get_alarm.await_count == 2
+
+
+async def test_alarm_close_updates_activity_without_hiding_alarm(
+    hass: HomeAssistant,
+) -> None:
+    """The coordinator retains detail while publishing its inactive state."""
+    coordinator, client = _coordinator(hass)
+    client.async_get_alarms.side_effect = (
+        _page(positive=1),
+        _page(positive=2),
+    )
+    client.async_get_alarm.side_effect = (_detail(), _detail(closed=True))
+
+    coordinator.data = await coordinator._async_update_data()
+    assert coordinator.snapshot(7).activity is AlarmActivity.ACTIVE
+
+    coordinator.data = await coordinator._async_update_data()
+
+    snapshot = coordinator.snapshot(7)
+    assert snapshot.alarm is not None
+    assert snapshot.alarm.id == 11
+    assert snapshot.activity is AlarmActivity.INACTIVE
+    assert snapshot.alarm.feedback_deadline is None
 
 
 async def test_new_alarm_id_replaces_canonical_state(

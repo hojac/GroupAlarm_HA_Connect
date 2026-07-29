@@ -332,7 +332,7 @@ def test_invalid_confirmed_personal_duration_is_rejected(duration: object) -> No
         )
 
 
-def test_normalizer_keeps_unrelated_semantics_separate() -> None:
+def test_closed_alarm_keeps_unrelated_semantics_separate() -> None:
     alarm = normalize_alarm(
         _detail(),
         alarm_id=11,
@@ -342,11 +342,61 @@ def test_normalizer_keeps_unrelated_semantics_separate() -> None:
 
     assert alarm.closed_at == datetime(2026, 7, 27, 10, 5, tzinfo=UTC)
     assert alarm.event_closed_at == datetime(2026, 7, 27, 11, tzinfo=UTC)
-    assert alarm.activity is AlarmActivity.UNKNOWN
+    assert alarm.activity is AlarmActivity.INACTIVE
     assert alarm.feedback_eligibility is FeedbackEligibility.CLOSED
     assert alarm.feedback_deadline is None
     assert alarm.deadline_status is DeadlineStatus.UNKNOWN
     assert alarm.location is None
+
+
+@pytest.mark.parametrize("state", ["WAITING", "TIMEDOUT", "RESPONDED"])
+def test_open_alarm_activity_is_independent_of_feedback_and_event_close(
+    state: str,
+) -> None:
+    """Personal feedback, event close and archive state do not end an alarm."""
+    payload = _detail(
+        feedback=[
+            {
+                "alarmID": 11,
+                "userID": 41,
+                "state": state,
+                "feedback": True,
+            }
+        ]
+    )
+    payload.pop("endDate")
+
+    alarm = normalize_alarm(
+        payload,
+        alarm_id=11,
+        organization_id=7,
+        user_id=41,
+    )
+
+    assert alarm.closed_at is None
+    assert alarm.event_closed_at is not None
+    assert alarm.event_archived is True
+    assert alarm.activity is AlarmActivity.ACTIVE
+
+
+def test_event_abort_marks_alarm_inactive_without_alarm_end() -> None:
+    """A validated abort object is an explicit inactive signal."""
+    payload = _detail()
+    payload.pop("endDate")
+    event = payload["event"]
+    assert isinstance(event, dict)
+    event["abort"] = {"time": "2026-07-27T10:04:00Z"}
+
+    alarm = normalize_alarm(
+        payload,
+        alarm_id=11,
+        organization_id=7,
+        user_id=41,
+    )
+
+    assert alarm.closed_at is None
+    assert alarm.event_abort_present is True
+    assert alarm.activity is AlarmActivity.INACTIVE
 
 
 def test_conflicting_confirmed_feedback_is_rejected() -> None:

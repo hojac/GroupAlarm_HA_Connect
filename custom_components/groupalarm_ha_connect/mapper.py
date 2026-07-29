@@ -285,6 +285,11 @@ def normalize_alarm(
     if abort is not None:
         _object(abort, "alarm.event.abort")
     closed_at = _optional_datetime(payload.get("endDate"), "alarm.endDate")
+    activity = (
+        AlarmActivity.INACTIVE
+        if closed_at is not None or abort is not None
+        else AlarmActivity.ACTIVE
+    )
 
     (
         personal_feedback,
@@ -319,8 +324,7 @@ def normalize_alarm(
         ),
         personal_feedback=personal_feedback,
         personal_feedback_duration=personal_feedback_duration,
-        # Alarm activity remains separate from the feedback window.
-        activity=AlarmActivity.UNKNOWN,
+        activity=activity,
         feedback_eligibility=feedback_eligibility,
         feedback_deadline=None,
         deadline_status=deadline_status,

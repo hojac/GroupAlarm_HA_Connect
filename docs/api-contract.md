@@ -123,7 +123,7 @@ The response is `Alarm`. Fields consumed by the normalizer may include:
 | `event.endDate` | date-time | Event close |
 | `event.scheduledEndtime` | date-time | Scheduled event close, not feedback deadline |
 | `event.archived` | boolean | Event archive flag |
-| `event.abort` | object | Abort information; mapping awaits explicit status evidence |
+| `event.abort` | object | Its presence proves that the alarm is no longer active |
 | `optionalContent` | untyped | Location/content source only after fixture-backed normalization |
 | `feedback[]` | array | Per-recipient feedback records |
 | `feedbackQuantity.positive` | integer | Positive aggregate count |
@@ -143,6 +143,11 @@ Only a `feedback[]` item whose `alarmID` equals the current alarm and whose
 The Swagger schema does not enumerate `state`; `RESPONDED`, `TIMEDOUT` and
 `UNAVAILABLE` are accepted because repository Issues #2/#20 record them from
 real payloads. New values remain unknown until evidenced.
+
+Alarm activity is mapped independently of recipient feedback: a validated
+detail without top-level `endDate` and without `event.abort` is active. A
+top-level `endDate` or the presence of `event.abort` makes it inactive. Event
+close/archive fields and feedback/deadline state do not affect this axis.
 
 For the same matching `RESPONDED` record, `userDuration` is the documented
 traffic duration to the organization in minutes. It is consumed only to

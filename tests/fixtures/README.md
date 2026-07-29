@@ -15,8 +15,10 @@ Every JSON fixture must contain this top-level marker:
 }
 ```
 
-No real payload has been added yet. Activity and location mappings therefore
-remain blocked until the required anonymized evidence is available. Feedback
+No real payload has been added yet. Activity uses the separately reviewed
+top-level `alarm.endDate` transition and the documented `event.abort` object;
+an anonymized abort fixture is still required by Issue #7. Location mapping
+remains blocked until the required anonymized evidence is available. Feedback
 eligibility and the local deadline use minimal synthetic structures matching
 the separately reviewed `WAITING`/`TIMEDOUT` and timeout responses; raw
 responses are never committed.

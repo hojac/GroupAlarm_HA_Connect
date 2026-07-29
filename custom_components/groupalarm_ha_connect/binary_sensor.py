@@ -49,7 +49,7 @@ class GroupAlarmActiveAlertBinarySensor(GroupAlarmEntity, BinarySensorEntity):
 
     @property
     def is_on(self) -> bool | None:
-        """Return None until real payload evidence proves activity."""
+        """Return the separately normalized alarm activity."""
         activity = self.snapshot.activity
         if activity is AlarmActivity.ACTIVE:
             return True

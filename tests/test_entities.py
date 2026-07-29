@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from unittest.mock import AsyncMock, patch
 
-from homeassistant.const import CONF_TOKEN, STATE_UNAVAILABLE, STATE_UNKNOWN
+from homeassistant.const import CONF_TOKEN, STATE_ON, STATE_UNAVAILABLE, STATE_UNKNOWN
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
@@ -244,7 +244,7 @@ async def test_setup_creates_stable_devices_and_read_entities(
             build_entity_unique_id(41, organization_id, "active_alert"),
         )
         assert activity_entity_id is not None
-        assert hass.states.get(activity_entity_id).state == STATE_UNKNOWN
+        assert hass.states.get(activity_entity_id).state == STATE_ON
 
         tracker_entity_id = entity_registry.async_get_entity_id(
             "device_tracker",
