@@ -45,6 +45,15 @@ from .models import (
 )
 from .repairs import async_sync_feedback_device_issue
 
+_LEGACY_ENTITY_KEY_MIGRATIONS = {
+    ("sensor", "end"): "feedback_deadline",
+    ("sensor", "countdown"): "feedback_countdown",
+}
+_REMOVED_LEGACY_ENTITY_KEYS = {
+    ("sensor", "latitude"),
+    ("sensor", "longitude"),
+}
+
 
 def _organization_names(
     entry: GroupAlarmConfigEntry,
@@ -118,6 +127,14 @@ def _migrate_registries(
         if organization_id not in organization_ids:
             entity_registry.async_remove(registry_entry.entity_id)
             continue
+        legacy_identity = (registry_entry.domain, entity_key)
+        if legacy_identity in _REMOVED_LEGACY_ENTITY_KEYS:
+            entity_registry.async_remove(registry_entry.entity_id)
+            continue
+        entity_key = _LEGACY_ENTITY_KEY_MIGRATIONS.get(
+            legacy_identity,
+            entity_key,
+        )
         new_unique_id = build_entity_unique_id(
             user_id,
             organization_id,

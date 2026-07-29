@@ -2,6 +2,14 @@
 
 All notable changes to this project are documented in this file.
 
+## [Unreleased]
+
+### Fixed
+
+- Migrate the legacy `end` and `countdown` sensors onto their v0.5 identities
+  without creating `_2` entities, and remove obsolete `latitude`/`longitude`
+  registry entries.
+
 ## [0.5.1] - 2026-07-29
 
 ### Added

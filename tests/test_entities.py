@@ -391,3 +391,142 @@ async def test_registry_migration_preserves_selected_and_removes_stale(
     assert selected_after.identifiers == {(DOMAIN, build_device_identifier(41, 7))}
     stale_after = device_registry.async_get(stale_device.id)
     assert stale_after is None or entry.entry_id not in stale_after.config_entries
+
+
+async def test_v03_registry_upgrade_reuses_deadline_entities_and_is_idempotent(
+    hass: HomeAssistant,
+) -> None:
+    """Renamed v0.3 sensors retain their entity IDs across setup and reload."""
+    entry = _entry((7,))
+    entry.add_to_hass(hass)
+    entity_registry = er.async_get(hass)
+    legacy_deadline = entity_registry.async_get_or_create(
+        "sensor",
+        DOMAIN,
+        f"{entry.entry_id}_7_end",
+        config_entry=entry,
+        suggested_object_id="groupalarm_ha_connect_alpha_ruckmeldefrist_ende",
+    )
+    legacy_countdown = entity_registry.async_get_or_create(
+        "sensor",
+        DOMAIN,
+        f"{entry.entry_id}_7_countdown",
+        config_entry=entry,
+        suggested_object_id="groupalarm_ha_connect_alpha_countdown",
+    )
+    legacy_latitude = entity_registry.async_get_or_create(
+        "sensor",
+        DOMAIN,
+        f"{entry.entry_id}_7_latitude",
+        config_entry=entry,
+        suggested_object_id="groupalarm_ha_connect_alpha_latitude",
+    )
+    legacy_longitude = entity_registry.async_get_or_create(
+        "sensor",
+        DOMAIN,
+        f"{entry.entry_id}_7_longitude",
+        config_entry=entry,
+        suggested_object_id="groupalarm_ha_connect_alpha_longitude",
+    )
+    entity_registry.async_update_entity(
+        legacy_deadline.entity_id,
+        name="Meine Rückmeldefrist",
+        icon="mdi:timer",
+    )
+
+    patches = _api_patches()
+    with patches[0], patches[1], patches[2], patches[3], patches[4]:
+        assert await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done()
+
+        deadline_id = entity_registry.async_get_entity_id(
+            "sensor",
+            DOMAIN,
+            build_entity_unique_id(41, 7, "feedback_deadline"),
+        )
+        countdown_id = entity_registry.async_get_entity_id(
+            "sensor",
+            DOMAIN,
+            build_entity_unique_id(41, 7, "feedback_countdown"),
+        )
+        assert deadline_id == legacy_deadline.entity_id
+        assert countdown_id == legacy_countdown.entity_id
+        assert "_2" not in deadline_id
+        assert "_2" not in countdown_id
+        migrated_deadline = entity_registry.async_get(deadline_id)
+        assert migrated_deadline is not None
+        assert migrated_deadline.name == "Meine Rückmeldefrist"
+        assert migrated_deadline.icon == "mdi:timer"
+        assert entity_registry.async_get(legacy_latitude.entity_id) is None
+        assert entity_registry.async_get(legacy_longitude.entity_id) is None
+
+        assert await hass.config_entries.async_unload(entry.entry_id)
+        assert await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done()
+
+    assert (
+        entity_registry.async_get_entity_id(
+            "sensor",
+            DOMAIN,
+            build_entity_unique_id(41, 7, "feedback_deadline"),
+        )
+        == legacy_deadline.entity_id
+    )
+    assert (
+        entity_registry.async_get_entity_id(
+            "sensor",
+            DOMAIN,
+            build_entity_unique_id(41, 7, "feedback_countdown"),
+        )
+        == legacy_countdown.entity_id
+    )
+
+
+async def test_registry_migration_prefers_existing_target_on_conflict(
+    hass: HomeAssistant,
+) -> None:
+    """A used target survives when the matching legacy entity also exists."""
+    entry = _entry((7,))
+    entry.add_to_hass(hass)
+    entity_registry = er.async_get(hass)
+    legacy = entity_registry.async_get_or_create(
+        "sensor",
+        DOMAIN,
+        f"{entry.entry_id}_7_end",
+        config_entry=entry,
+        suggested_object_id="legacy_deadline",
+    )
+    target = entity_registry.async_get_or_create(
+        "sensor",
+        DOMAIN,
+        build_entity_unique_id(41, 7, "feedback_deadline"),
+        config_entry=entry,
+        suggested_object_id="used_deadline",
+    )
+    entity_registry.async_update_entity(
+        target.entity_id,
+        name="Verwendete Zielentität",
+    )
+
+    _migrate_registries(
+        hass,
+        entry,
+        user_id=41,
+        organization_ids={7},
+    )
+    _migrate_registries(
+        hass,
+        entry,
+        user_id=41,
+        organization_ids={7},
+    )
+
+    assert entity_registry.async_get(legacy.entity_id) is None
+    retained = entity_registry.async_get(target.entity_id)
+    assert retained is not None
+    assert retained.name == "Verwendete Zielentität"
+    assert retained.unique_id == build_entity_unique_id(
+        41,
+        7,
+        "feedback_deadline",
+    )

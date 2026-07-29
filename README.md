@@ -70,6 +70,19 @@ Diagnosedateien oder Automationen ein.
 Die Zieldatei muss anschließend unter
 `/config/custom_components/groupalarm_ha_connect/manifest.json` liegen.
 
+### Upgrade von v0.3.x
+
+Beim ersten Start nach dem Upgrade übernimmt die Integration vorhandene
+Registry-Einträge für `Rückmeldefrist Ende` und `Rückmeldefrist Countdown` in
+das v0.5-Schema. Die bisherigen Entity-IDs, benutzerdefinierten Namen, Symbole
+und Historien bleiben dabei erhalten; es entstehen keine zusätzlichen
+Entity-IDs mit dem Suffix `_2`.
+
+Die nicht mehr bereitgestellten Einzelsensoren `Latitude` und `Longitude`
+werden aus der Entity Registry entfernt. Der Standort wird ab v0.5 über die
+Entität `Einsatzort` bereitgestellt. Vor dem Upgrade müssen keine Entitäten
+manuell gelöscht werden.
+
 ## Einrichtung und Änderungen
 
 1. Öffne **Einstellungen → Geräte & Dienste**.
