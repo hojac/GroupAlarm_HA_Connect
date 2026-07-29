@@ -133,9 +133,10 @@ Forbidden deadline inputs:
 3. Load a sufficiently safe alarm-list window.
 4. Select a validated candidate only under the ordering policy documented in
    `api-contract.md`.
-5. For a newly detected alarm ID, fetch canonical detail and the organization
-   timeout together.
-6. Normalize and publish one snapshot per organization.
+5. For a newly detected alarm ID, fetch and normalize canonical detail.
+6. Only for an open personal `WAITING` state, load the organization timeout
+   once and create the local window from alarm-detection time.
+7. Publish one snapshot per organization.
 
 ### Regular low-traffic poll
 

@@ -179,8 +179,10 @@ Response:
 duration after which a notified user times out and cannot answer an alarm.
 The specification does not identify the absolute server-side reference
 timestamp. The integration therefore uses the product-defined local contract:
-load the value once when a new alarm ID is first detected and calculate a
-Home-Assistant-local cutoff from that detection time.
+after a new alarm ID is detected, normalize canonical detail first. Load the
+value once and calculate a Home-Assistant-local cutoff from detection time only
+when the matching personal state is `WAITING` and the alarm is neither closed
+nor aborted.
 
 ### App devices
 
@@ -284,7 +286,8 @@ The design goal is to avoid downloading alarm detail on every poll.
 1. Load the current user once per config-entry setup/reload.
 2. Load accessible organizations during setup/options/reconfigure, not every
    alarm poll.
-3. Load the organization timeout once for each newly detected alarm ID.
+3. Load the organization timeout once for each newly detected alarm ID whose
+   canonical detail proves an open personal `WAITING` state.
 4. Poll the alarm-list gate once per configured interval and organization,
    with bounded parallelism.
 5. Cache the selected alarm ID and a small list-derived revision fingerprint.
@@ -338,9 +341,10 @@ entry. Organization names are refreshed there, not during alarm polling.
 `DataUpdateCoordinator(always_update=False)` suppresses entity callbacks when
 the immutable normalized snapshots compare equal.
 
-The organization timeout is requested together with canonical detail only for
-a new alarm ID. It is not refreshed for ordinary list polls or local countdown
-ticks.
+For a new alarm ID, canonical detail is normalized before the organization
+timeout is requested. The timeout is skipped for answered, timed-out,
+unavailable, closed, aborted or otherwise non-`WAITING` alarms and is not
+refreshed for ordinary list polls or local countdown ticks.
 
 ## Feedback delivery and reconciliation
 

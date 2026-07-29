@@ -7,7 +7,9 @@
 # internal GroupAlarm IDs in this template.
 #
 # The feedback deadline is local to Home Assistant and starts when a new alarm
-# ID is detected. Activity and location remain neutral until proven.
+# ID with a personal WAITING state is detected. It is not the unknown
+# GroupAlarm server notification time. Activity and location use validated
+# current-alarm detail only.
 
 type: vertical-stack
 cards:

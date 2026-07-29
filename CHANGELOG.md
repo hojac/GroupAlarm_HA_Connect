@@ -6,6 +6,9 @@ All notable changes to this project are documented in this file.
 
 ### Fixed
 
+- Create a local feedback deadline only when canonical detail proves an open
+  personal `WAITING` state, and discard it after response, timeout, close or
+  abort.
 - Migrate the legacy `end` and `countdown` sensors onto their v0.5 identities
   without creating `_2` entities, and remove obsolete `latitude`/`longitude`
   registry entries.

@@ -156,8 +156,9 @@ Der vollständige Alarmdatensatz wird nur geladen:
 - oder als Sicherheitsabgleich nach 15 Minuten.
 
 Benutzer und Organisationen werden nur beim Setup beziehungsweise Reload
-geladen. Der Organisations-Timeout wird nur beim ersten Erkennen einer neuen
-Alarm-ID zusammen mit dem Alarmdetail abgefragt.
+geladen. Bei einer neuen Alarm-ID wird zuerst das Alarmdetail normalisiert.
+Nur wenn es eine offene persönliche Rückmeldung mit `WAITING` belegt, wird der
+Organisations-Timeout einmal geladen und die lokale Frist erzeugt.
 
 Die API dokumentiert keine Sortierreihenfolge der Alarmliste. Liegen mehr als
 zehn Alarme vor, ist deshalb formal nicht garantiert, dass das erste Fenster
@@ -195,14 +196,16 @@ GroupAlarm liefert über
 aber keinen absoluten Beginn der persönlichen Frist. Deshalb verwendet die
 Integration die ausdrücklich festgelegte lokale Semantik:
 
-1. Beim ersten Erkennen einer neuen Alarm-ID wird der Timeout einmal geladen.
+1. Beim ersten Erkennen einer neuen Alarm-ID wird das Detail geprüft. Nur für
+   einen offenen persönlichen `WAITING`-Zustand wird der Timeout einmal geladen.
 2. Die lokale Frist ist Erkennungszeit plus Timeout.
 3. Der Countdown läuft lokal im Sekundentakt; es entsteht kein API-Aufruf pro
    Sekunde.
 4. Bei `0` werden beide Rückmelde-Buttons gesperrt. Dieselbe Fristprüfung läuft
    nochmals unmittelbar vor jedem Feedback-POST.
 5. `RESPONDED`, `TIMEDOUT`, `UNAVAILABLE` oder ein geschlossener Alarm sperren
-   Rückmeldungen unabhängig vom lokalen Restwert.
+   Rückmeldungen unabhängig vom lokalen Restwert und erhalten keine neue lokale
+   Frist.
 
 Diese lokale Frist ist nicht die unbekannte serverseitige Benachrichtigungszeit.
 Wird Home Assistant während eines noch auf `WAITING` stehenden Alarms neu
