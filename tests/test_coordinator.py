@@ -140,12 +140,15 @@ def _detail(
     organization_id: int = 7,
     response: bool | None = None,
     duration: int | None = None,
+    feedback_state: str = "WAITING",
+    closed: bool = False,
+    aborted: bool = False,
 ) -> dict[str, object]:
     feedback: list[dict[str, object]] = [
         {
             "alarmID": alarm_id,
             "userID": 41,
-            "state": "WAITING",
+            "state": feedback_state,
             "feedback": False,
         }
     ]
@@ -159,7 +162,7 @@ def _detail(
         if duration is not None:
             item["userDuration"] = duration
         feedback = [item]
-    return {
+    detail: dict[str, object] = {
         "id": alarm_id,
         "organizationID": organization_id,
         "message": f"Alarm {alarm_id}",
@@ -177,6 +180,13 @@ def _detail(
             "unknown": 2,
         },
     }
+    if closed:
+        detail["endDate"] = "2026-07-27T10:30:00Z"
+    if aborted:
+        event = detail["event"]
+        assert isinstance(event, dict)
+        event["abort"] = {"date": "2026-07-27T10:20:00Z"}
+    return detail
 
 
 def _coordinator(
@@ -275,10 +285,10 @@ async def test_new_alarm_loads_one_local_feedback_window(
     client.async_get_alarm.assert_awaited_once_with(11)
 
 
-async def test_new_alarm_countdown_does_not_depend_on_button_eligibility(
+async def test_new_alarm_without_waiting_feedback_has_no_countdown(
     hass: HomeAssistant,
 ) -> None:
-    """Every unclosed new alarm gets a countdown while unknown stays fail-safe."""
+    """An unknown feedback state cannot create a local response window."""
     coordinator, client = _coordinator(hass)
     client.async_get_alarms.return_value = _page()
     detail = _detail()
@@ -300,10 +310,69 @@ async def test_new_alarm_countdown_does_not_depend_on_button_eligibility(
         coordinator.data = await coordinator._async_update_data()
         alarm = coordinator.snapshot(7).alarm
         assert alarm is not None
-        assert alarm.deadline_status is DeadlineStatus.KNOWN_ACTIVE
+        assert alarm.feedback_deadline is None
+        assert alarm.deadline_status is DeadlineStatus.UNKNOWN
         assert alarm.feedback_eligibility is FeedbackEligibility.UNKNOWN
-        assert coordinator.feedback_countdown(7) == 300
+        assert coordinator.feedback_countdown(7) is None
         assert coordinator.can_send_feedback(7) is False
+    client.async_get_organization_timeout.assert_not_awaited()
+
+
+@pytest.mark.parametrize(
+    ("detail_kwargs", "expected_status"),
+    [
+        ({"response": True}, DeadlineStatus.ANSWERED),
+        ({"feedback_state": "TIMEDOUT"}, DeadlineStatus.UNKNOWN),
+        ({"feedback_state": "UNAVAILABLE"}, DeadlineStatus.UNKNOWN),
+        ({"closed": True}, DeadlineStatus.UNKNOWN),
+        ({"aborted": True}, DeadlineStatus.UNKNOWN),
+    ],
+)
+async def test_completed_alarm_has_no_window_on_initial_load_or_reload(
+    hass: HomeAssistant,
+    detail_kwargs: dict[str, object],
+    expected_status: DeadlineStatus,
+) -> None:
+    """Setup and reload never invent a deadline for an already finished alarm."""
+    for _reload in range(2):
+        coordinator, client = _coordinator(hass)
+        client.async_get_alarms.return_value = _page()
+        client.async_get_alarm.return_value = _detail(**detail_kwargs)
+
+        coordinator.data = await coordinator._async_update_data()
+        coordinator.data = await coordinator._async_update_data()
+
+        alarm = coordinator.snapshot(7).alarm
+        assert alarm is not None
+        assert alarm.feedback_deadline is None
+        assert alarm.deadline_status is expected_status
+        assert coordinator.feedback_countdown(7) is None
+        assert coordinator._feedback_windows == {}
+        client.async_get_alarm.assert_awaited_once_with(11)
+        client.async_get_organization_timeout.assert_not_awaited()
+
+
+async def test_detail_refresh_removes_window_after_server_closes_feedback(
+    hass: HomeAssistant,
+) -> None:
+    """A canonical closed state removes a previously running local window."""
+    coordinator, client = _coordinator(hass)
+    client.async_get_alarms.side_effect = (_page(positive=1), _page(positive=2))
+    client.async_get_alarm.side_effect = (
+        _detail(),
+        _detail(feedback_state="TIMEDOUT"),
+    )
+
+    coordinator.data = await coordinator._async_update_data()
+    updated = await coordinator._async_update_data()
+
+    alarm = updated.for_organization(7).alarm
+    assert alarm is not None
+    assert alarm.feedback_eligibility is FeedbackEligibility.CLOSED
+    assert alarm.feedback_deadline is None
+    assert alarm.deadline_status is DeadlineStatus.UNKNOWN
+    assert coordinator._feedback_windows == {}
+    client.async_get_organization_timeout.assert_awaited_once_with(7)
 
 
 async def test_countdown_zero_closes_feedback_without_api_poll(

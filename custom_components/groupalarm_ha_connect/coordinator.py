@@ -103,7 +103,7 @@ def _apply_feedback_window(
         return replace(
             alarm,
             feedback_eligibility=FeedbackEligibility.CLOSED,
-            feedback_deadline=window.deadline,
+            feedback_deadline=None,
             deadline_status=DeadlineStatus.ANSWERED,
         )
     if now >= window.deadline:
@@ -123,6 +123,16 @@ def _apply_feedback_window(
         alarm,
         feedback_deadline=window.deadline,
         deadline_status=DeadlineStatus.UNKNOWN,
+    )
+
+
+def _accepts_feedback_window(alarm: GroupAlarmAlarm) -> bool:
+    """Return whether canonical detail proves a still-open personal response."""
+    return (
+        alarm.personal_feedback is PersonalFeedback.UNKNOWN
+        and alarm.feedback_eligibility is FeedbackEligibility.OPEN
+        and alarm.closed_at is None
+        and not alarm.event_abort_present
     )
 
 
@@ -382,6 +392,8 @@ class GroupAlarmCoordinator(DataUpdateCoordinator[GroupAlarmCoordinatorData]):
         """Publish canonical detail obtained after a feedback write."""
         if not self._target_is_current(alarm.organization_id, alarm.id):
             raise FeedbackSupersededError
+        if not _accepts_feedback_window(alarm):
+            self._feedback_windows.pop(alarm.organization_id, None)
         alarm = _apply_feedback_window(
             alarm,
             self._feedback_windows.get(alarm.organization_id),
@@ -614,7 +626,7 @@ class GroupAlarmCoordinator(DataUpdateCoordinator[GroupAlarmCoordinatorData]):
 
                 previous_reference = self._references.get(organization_id)
                 window = self._feedback_windows.get(organization_id)
-                window_required = window is None or window.alarm_id != reference.id
+                window_missing = window is None or window.alarm_id != reference.id
                 if (
                     previous_reference is not None
                     and previous_reference.id != reference.id
@@ -623,6 +635,9 @@ class GroupAlarmCoordinator(DataUpdateCoordinator[GroupAlarmCoordinatorData]):
                         organization_id,
                         keep_alarm_id=reference.id,
                     )
+                    self._feedback_windows.pop(organization_id, None)
+                    window = None
+                    window_missing = True
                 loaded_at = self._detail_loaded_at.get(organization_id)
                 safety_refresh_due = (
                     loaded_at is None
@@ -634,28 +649,32 @@ class GroupAlarmCoordinator(DataUpdateCoordinator[GroupAlarmCoordinatorData]):
                     or safety_refresh_due
                     or self._feedback_key(organization_id, reference.id)
                     in self._pending_feedback
-                    or window_required
                 )
                 if detail_required:
-                    if window_required:
-                        detected_at = _utcnow()
-                        detail, timeout = await asyncio.gather(
-                            self.client.async_get_alarm(reference.id),
-                            self.client.async_get_organization_timeout(organization_id),
-                        )
-                        window = _FeedbackWindow(
-                            alarm_id=reference.id,
-                            deadline=detected_at + timedelta(seconds=timeout),
-                        )
-                        self._feedback_windows[organization_id] = window
-                    else:
-                        detail = await self.client.async_get_alarm(reference.id)
+                    detected_at = _utcnow()
+                    detail = await self.client.async_get_alarm(reference.id)
                     alarm = normalize_alarm(
                         detail,
                         alarm_id=reference.id,
                         organization_id=organization_id,
                         user_id=self.user.id,
                     )
+                    if _accepts_feedback_window(alarm):
+                        if window_missing:
+                            timeout = await self.client.async_get_organization_timeout(
+                                organization_id
+                            )
+                            window = _FeedbackWindow(
+                                alarm_id=reference.id,
+                                deadline=detected_at + timedelta(seconds=timeout),
+                            )
+                            self._feedback_windows[organization_id] = window
+                    else:
+                        self._feedback_windows.pop(organization_id, None)
+                        window = None
+                    if window is not None and window.alarm_id != reference.id:
+                        self._feedback_windows.pop(organization_id, None)
+                        window = None
                     alarm = _apply_feedback_window(alarm, window, _utcnow())
                     self._alarms[organization_id] = alarm
                     self._detail_loaded_at[organization_id] = monotonic()
