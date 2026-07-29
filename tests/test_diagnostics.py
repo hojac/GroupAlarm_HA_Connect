@@ -153,7 +153,7 @@ async def test_diagnostics_expose_only_pseudonyms_and_state_flags(
     serialized = json.dumps(diagnostics, sort_keys=True)
 
     assert diagnostics["integration"] == {
-        "version": "0.5.0",
+        "version": "0.5.1",
         "config_entry_version": 3,
         "scan_interval_seconds": 60,
         "organization_count": 2,

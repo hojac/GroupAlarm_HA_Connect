@@ -7,7 +7,7 @@ Home-Assistant-Entitäten bereit.
 
 > [!IMPORTANT]
 > Dieses Projekt steht in keiner offiziellen Verbindung zur GroupAlarm GmbH.
-> Version `0.5.0` ist ein vollständiger Neubau. Die Rückmeldefrist ist eine
+> Version `0.5.1` ist ein vollständiger Neubau. Die Rückmeldefrist ist eine
 > bewusst lokale Frist ab Erkennung einer neuen Alarm-ID. Alarmaktivität und
 > Einsatzort bleiben unbekannt beziehungsweise nicht verfügbar, solange ihre
 > realen JSON-Pfade nicht abschließend belegt sind.
@@ -304,8 +304,9 @@ Reale JSON-Payloads müssen vor Aufnahme als Fixture mit
 werden. Die CI kontrolliert zusätzlich Cache-Dateien, bekannte
 Credential-Muster und den Anonymisierungsmarker aller JSON-Fixtures.
 
-Release Notes, Git-Tag `v0.5.0` und GitHub-Release entstehen erst nach
-Realtest, Upgrade-/Migrationstest und ausdrücklicher Freigabe.
+Version `0.5.1` ist für den ersten Realtest in Home Assistant freigegeben.
+Die noch ausstehenden Feld- und Upgrade-Tests sind im Changelog als bekannte
+Einschränkungen dokumentiert.
 
 ## Lizenz
 
