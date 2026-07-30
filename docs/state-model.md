@@ -1,4 +1,4 @@
-# Domain state model for v0.5.1
+# Domain state model for v0.5.2
 
 Status: Phase 0 design, audited 2026-07-27
 

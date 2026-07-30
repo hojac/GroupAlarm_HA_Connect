@@ -66,10 +66,10 @@ def test_version_and_minimum_home_assistant_are_consistent() -> None:
     hacs = json.loads((ROOT / "hacs.json").read_text())
     pyproject = (ROOT / "pyproject.toml").read_text()
 
-    assert manifest["version"] == "0.5.1"
+    assert manifest["version"] == "0.5.2"
     assert manifest["version"] == INTEGRATION_VERSION
     assert hacs["homeassistant"] == "2026.6.0"
-    assert 'version = "0.5.1"' in pyproject
+    assert 'version = "0.5.2"' in pyproject
     assert 'requires-python = ">=3.14.2"' in pyproject
 
 

@@ -4,6 +4,8 @@ All notable changes to this project are documented in this file.
 
 ## [Unreleased]
 
+## [0.5.2] - 2026-07-30
+
 ### Fixed
 
 - Create a local feedback deadline only when canonical detail proves an open

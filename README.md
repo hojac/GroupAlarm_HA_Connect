@@ -7,8 +7,9 @@ Home-Assistant-Entitäten bereit.
 
 > [!IMPORTANT]
 > Dieses Projekt steht in keiner offiziellen Verbindung zur GroupAlarm GmbH.
-> Version `0.5.1` ist ein vollständiger Neubau. Die Rückmeldefrist ist eine
-> bewusst lokale Frist ab Erkennung einer neuen Alarm-ID.
+> Version `0.5.2` basiert auf dem vollständigen asynchronen Neubau. Die
+> Rückmeldefrist ist eine bewusst lokale Frist, die nur für einen offenen
+> persönlichen `WAITING`-Zustand angelegt wird.
 
 ## Funktionsumfang
 
@@ -286,8 +287,11 @@ eine Antwort bestätigt wurde oder der Alarm geschlossen ist.
 
 ### Standort fehlt
 
-Die Zuordnung bleibt bis zu weiteren realen anonymisierten Payloads blockiert.
-Es wird keine Ersatzposition verwendet.
+Der Tracker wird nur bei einem vollständigen, gültigen WGS84-Koordinatenpaar
+verfügbar. Prüfe, ob der aktuelle Alarm unter `optionalContent` sowohl
+`locationLatitude` als auch `locationLongitude` enthält. Teilwerte, ungültige
+Bereiche und andere Koordinatensysteme werden bewusst nicht verwendet; es gibt
+keine Ersatzposition.
 
 ### Integration entfernen
 
@@ -318,9 +322,8 @@ Reale JSON-Payloads müssen vor Aufnahme als Fixture mit
 werden. Die CI kontrolliert zusätzlich Cache-Dateien, bekannte
 Credential-Muster und den Anonymisierungsmarker aller JSON-Fixtures.
 
-Version `0.5.1` ist für den ersten Realtest in Home Assistant freigegeben.
-Die noch ausstehenden Feld- und Upgrade-Tests sind im Changelog als bekannte
-Einschränkungen dokumentiert.
+Version `0.5.2` enthält die Korrekturen aus dem ersten Realtest. Weitere Feld-
+und Upgrade-Tests werden mit anonymisierten Referenzfällen fortgesetzt.
 
 ## Lizenz
 
