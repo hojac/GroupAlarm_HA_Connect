@@ -71,11 +71,11 @@ jobs:
           category: integration
 
   release:
-    name: Publish v0.5.2
+    name: Publish v0.5.3
     if: >-
       github.event_name == 'push' &&
       github.ref == 'refs/heads/rewrite/v0.5.0' &&
-      github.event.head_commit.message == 'Release v0.5.2'
+      github.event.head_commit.message == 'Release v0.5.3'
     needs:
       - quality
       - validate
@@ -89,35 +89,35 @@ jobs:
 
       - name: Validate release version
         run: |
-          test "$(jq -r '.version' custom_components/groupalarm_ha_connect/manifest.json)" = "0.5.2"
-          grep -Fqx 'version = "0.5.2"' pyproject.toml
-          grep -Fq 'INTEGRATION_VERSION: Final = "0.5.2"' custom_components/groupalarm_ha_connect/const.py
-          grep -Fq '## [0.5.2] - 2026-07-30' CHANGELOG.md
+          test "$(jq -r '.version' custom_components/groupalarm_ha_connect/manifest.json)" = "0.5.3"
+          grep -Fqx 'version = "0.5.3"' pyproject.toml
+          grep -Fq 'INTEGRATION_VERSION: Final = "0.5.3"' custom_components/groupalarm_ha_connect/const.py
+          grep -Fq '## [0.5.3] - 2026-08-13' CHANGELOG.md
 
       - name: Create GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if gh release view v0.5.2 >/dev/null 2>&1; then
-            echo "Release v0.5.2 already exists."
+          if gh release view v0.5.3 >/dev/null 2>&1; then
+            echo "Release v0.5.3 already exists."
             exit 0
           fi
 
-          release_notes_file="${RUNNER_TEMP}/groupalarm-ha-connect-v0.5.2.md"
+          release_notes_file="${RUNNER_TEMP}/groupalarm-ha-connect-v0.5.3.md"
           cat > "${release_notes_file}" <<'EOF'
-          ## GroupAlarm HA Connect v0.5.2
+          ## GroupAlarm HA Connect v0.5.3
 
-          Korrekturen aus dem ersten Home-Assistant-Feldtest des asynchronen
-          Neubaus.
+          Korrekturen aus dem realen Upgrade- und Dashboard-Test von v0.5.2.
 
           ### Enthalten
 
-          - keine neue lokale Rückmeldefrist für bereits beantwortete, abgelaufene,
-            geschlossene oder abgebrochene Alarme
-          - idempotente Migration der alten Frist-Entitäten ohne `_2`-Duplikate
-          - Entfernung verwaister Latitude-/Longitude-Registry-Einträge
-          - korrekter Aktivstatus aus Alarmabschluss und Abbruch
-          - Einsatzort aus validierter Adresse und vollständigen WGS84-Koordinaten
+          - automatische Zusammenführung vorhandener Frist-Entitäten mit `_2`
+            auf die kanonischen Entity-IDs ohne Suffix
+          - Erhalt relevanter Registry-Anpassungen bei der Konfliktauflösung
+          - Entfernung verwaister Einsatzort-, Latitude- und Longitude-Sensoren
+          - abgesicherte Countdown-Anzeige ohne `unknown Sekunden`
+          - aktiver Countdown in 34 Pixeln und Home-Assistant-Warnfarbe
+          - korrigierte Beispiel-IDs für positive und negative Rückmeldungszähler
 
           ### Voraussetzungen
 
@@ -130,11 +130,11 @@ jobs:
             auf `WAITING` stehenden Alarm neu.
           - Der Tracker bleibt ohne vollständiges gültiges WGS84-Koordinatenpaar
             `unavailable`.
-          - Weitere Real- und Upgrade-Tests werden mit dieser Version fortgesetzt.
+          - Weitere Realtests werden mit anonymisierten API-Referenzfällen fortgesetzt.
           EOF
 
-          gh release create v0.5.2 \
+          gh release create v0.5.3 \
             --target "${GITHUB_SHA}" \
-            --title "GroupAlarm HA Connect v0.5.2" \
+            --title "GroupAlarm HA Connect v0.5.3" \
             --notes-file "${release_notes_file}" \
             --latest

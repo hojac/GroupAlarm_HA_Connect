@@ -7,7 +7,7 @@ Home-Assistant-Entitäten bereit.
 
 > [!IMPORTANT]
 > Dieses Projekt steht in keiner offiziellen Verbindung zur GroupAlarm GmbH.
-> Version `0.5.2` basiert auf dem vollständigen asynchronen Neubau. Die
+> Version `0.5.3` basiert auf dem vollständigen asynchronen Neubau. Die
 > Rückmeldefrist ist eine bewusst lokale Frist, die nur für einen offenen
 > persönlichen `WAITING`-Zustand angelegt wird.
 
@@ -77,10 +77,20 @@ das v0.5-Schema. Die bisherigen Entity-IDs, benutzerdefinierten Namen, Symbole
 und Historien bleiben dabei erhalten; es entstehen keine zusätzlichen
 Entity-IDs mit dem Suffix `_2`.
 
-Die nicht mehr bereitgestellten Einzelsensoren `Latitude` und `Longitude`
-werden aus der Entity Registry entfernt. Der Standort wird ab v0.5 über die
-Entität `Einsatzort` bereitgestellt. Vor dem Upgrade müssen keine Entitäten
-manuell gelöscht werden.
+Installationen, in denen v0.5.1 oder v0.5.2 bereits aktive Fristentitäten mit
+dem Suffix `_2` angelegt haben, werden beim ersten Start von v0.5.3 automatisch
+zusammengeführt. Die aktive v0.5-Entität übernimmt die bisherige Entity-ID ohne
+`_2`; benutzerdefinierte Namen, Symbole, Deaktivierung und weitere relevante
+Registry-Einstellungen bleiben erhalten.
+
+Die nicht mehr bereitgestellten Einzelsensoren `Einsatzort`, `Latitude` und
+`Longitude` werden aus der Entity Registry entfernt. Der Standort wird ab v0.5
+über den Device Tracker `Einsatzort` bereitgestellt. Vor dem Upgrade müssen
+keine Entitäten manuell gelöscht werden.
+
+Wer noch v0.5.2 nutzt, kann ein Dashboard vorübergehend auf die tatsächlich
+aktive `_2`-Countdown-Entität umstellen. Nach dem Upgrade auf v0.5.3 muss das
+Dashboard wieder die kanonische Entity-ID ohne `_2` verwenden.
 
 ## Einrichtung und Änderungen
 
@@ -261,8 +271,10 @@ Integration selbst benötigt keine Custom Card.
 
 Die Vorlage zeigt unbekannte Frist- und Aktivitätszustände neutral und färbt
 eine Rückmeldung erst, wenn der Sensor `Meine Rückmeldung` den vom Server
-bestätigten Wert enthält. Vor Verwendung müssen alle Beispiel-Entity-IDs durch
-die IDs der eigenen Installation ersetzt werden.
+bestätigten Wert enthält. Ein numerischer aktiver Countdown erscheint wie die
+Rückmeldungszähler in 34 Pixeln und in der Home-Assistant-Warnfarbe; nicht
+numerische Zustände werden als `Unbekannt` dargestellt. Vor Verwendung müssen
+alle Beispiel-Entity-IDs durch die IDs der eigenen Installation ersetzt werden.
 
 ## Fehlerbehebung
 
@@ -322,8 +334,9 @@ Reale JSON-Payloads müssen vor Aufnahme als Fixture mit
 werden. Die CI kontrolliert zusätzlich Cache-Dateien, bekannte
 Credential-Muster und den Anonymisierungsmarker aller JSON-Fixtures.
 
-Version `0.5.2` enthält die Korrekturen aus dem ersten Realtest. Weitere Feld-
-und Upgrade-Tests werden mit anonymisierten Referenzfällen fortgesetzt.
+Version `0.5.3` behebt den im realen Upgradepfad verbliebenen `_2`-Konflikt und
+härtet die Wall-Display-Vorlage ab. Weitere Feld- und Upgrade-Tests werden mit
+anonymisierten Referenzfällen fortgesetzt.
 
 ## Lizenz
 

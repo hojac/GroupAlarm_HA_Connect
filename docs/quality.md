@@ -1,6 +1,6 @@
 # Quality and release gates
 
-This document records the reproducible checks for the `0.5.2` release.
+This document records the reproducible checks for the `0.5.3` release.
 
 ## Local checks
 

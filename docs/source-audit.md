@@ -1,4 +1,4 @@
-# Source audit for the v0.5.2 release
+# Source audit for the v0.5.3 release
 
 Audit date: 2026-07-27
 

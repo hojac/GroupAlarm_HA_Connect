@@ -1,4 +1,4 @@
-# GroupAlarm API contract for v0.5.2
+# GroupAlarm API contract for v0.5.3
 
 Status: Phase 0 contract, audited 2026-07-27
 

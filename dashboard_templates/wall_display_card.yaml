@@ -1,4 +1,4 @@
-# GroupAlarm HA Connect 0.5.2 - Wall Display
+# GroupAlarm HA Connect 0.5.3 - Wall Display
 #
 # Optional dependency: custom:button-card
 #
@@ -94,7 +94,7 @@ cards:
   - type: horizontal-stack
     cards:
       - type: custom:button-card
-        entity: sensor.groupalarm_ha_connect_beispiel_ruckmeldungen_positiv
+        entity: sensor.groupalarm_ha_connect_beispiel_ruckmeldungen_positive
         name: Positiv
         show_icon: false
         show_state: true
@@ -107,7 +107,7 @@ cards:
             - font-size: 34px
             - font-weight: bold
       - type: custom:button-card
-        entity: sensor.groupalarm_ha_connect_beispiel_ruckmeldungen_negativ
+        entity: sensor.groupalarm_ha_connect_beispiel_ruckmeldungen_negative
         name: Negativ
         show_icon: false
         show_state: true
@@ -132,24 +132,81 @@ cards:
             - font-size: 34px
             - font-weight: bold
 
-  - type: markdown
-    title: Rückmeldefrist
-    content: >-
-      {% set status =
-        states('sensor.groupalarm_ha_connect_beispiel_ruckmeldefrist_status') %}
-      {% set countdown =
-        states('sensor.groupalarm_ha_connect_beispiel_ruckmeldefrist_countdown') %}
-      {% if status == 'answered' %}
-      **Rückmeldung erhalten**
-      {% elif status == 'known_active' %}
-      **{{ countdown }} Sekunden**
-      {% elif status == 'known_expired' %}
-      **Abgelaufen**
-      {% elif status == 'no_alarm' %}
-      Kein Alarm
-      {% else %}
-      **Unbekannt**
-      {% endif %}
+  - type: custom:button-card
+    entity: sensor.groupalarm_ha_connect_beispiel_ruckmeldefrist_status
+    name: Rückmeldefrist
+    show_icon: false
+    show_state: false
+    tap_action:
+      action: none
+    variables:
+      countdown_entity: sensor.groupalarm_ha_connect_beispiel_ruckmeldefrist_countdown
+    custom_fields:
+      frist: |
+        [[[
+          const status = entity?.state;
+          const raw = states[variables.countdown_entity]?.state;
+          const numeric =
+            typeof raw === 'string' &&
+            raw.trim() !== '' &&
+            Number.isFinite(Number(raw));
+
+          if (status === 'answered') {
+            return 'Rückmeldung erhalten';
+          }
+          if (status === 'known_active' && numeric) {
+            return `${Math.max(0, Math.trunc(Number(raw)))} Sekunden`;
+          }
+          if (status === 'known_expired') {
+            return 'Abgelaufen';
+          }
+          if (status === 'no_alarm') {
+            return 'Kein Alarm';
+          }
+          return 'Unbekannt';
+        ]]]
+    styles:
+      grid:
+        - grid-template-areas: '"n" "frist"'
+        - grid-template-columns: 1fr
+        - grid-template-rows: min-content min-content
+      card:
+        - padding: 16px
+      name:
+        - justify-self: start
+        - font-size: var(--ha-card-header-font-size, 24px)
+        - font-weight: normal
+        - margin-bottom: 8px
+      custom_fields:
+        frist:
+          - justify-self: start
+          - text-align: left
+          - color: |
+              [[[
+                const raw = states[variables.countdown_entity]?.state;
+                const active =
+                  entity?.state === 'known_active' &&
+                  typeof raw === 'string' &&
+                  raw.trim() !== '' &&
+                  Number.isFinite(Number(raw));
+                return active
+                  ? 'var(--warning-color, #ff9800)'
+                  : 'var(--primary-text-color)';
+              ]]]
+          - font-size: |
+              [[[
+                const raw = states[variables.countdown_entity]?.state;
+                const active =
+                  entity?.state === 'known_active' &&
+                  typeof raw === 'string' &&
+                  raw.trim() !== '' &&
+                  Number.isFinite(Number(raw));
+                return active ? '34px' : 'var(--ha-font-size-m, 14px)';
+              ]]]
+          - font-weight: |
+              [[[
+                return entity?.state === 'no_alarm' ? 'normal' : 'bold';
+              ]]]
 
   - type: horizontal-stack
     cards:

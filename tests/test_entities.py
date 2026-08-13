@@ -428,6 +428,13 @@ async def test_v03_registry_upgrade_reuses_deadline_entities_and_is_idempotent(
         config_entry=entry,
         suggested_object_id="groupalarm_ha_connect_alpha_longitude",
     )
+    legacy_address = entity_registry.async_get_or_create(
+        "sensor",
+        DOMAIN,
+        f"{entry.entry_id}_7_address",
+        config_entry=entry,
+        suggested_object_id="groupalarm_ha_connect_alpha_einsatzort",
+    )
     entity_registry.async_update_entity(
         legacy_deadline.entity_id,
         name="Meine Rückmeldefrist",
@@ -459,6 +466,7 @@ async def test_v03_registry_upgrade_reuses_deadline_entities_and_is_idempotent(
         assert migrated_deadline.icon == "mdi:timer"
         assert entity_registry.async_get(legacy_latitude.entity_id) is None
         assert entity_registry.async_get(legacy_longitude.entity_id) is None
+        assert entity_registry.async_get(legacy_address.entity_id) is None
 
         assert await hass.config_entries.async_unload(entry.entry_id)
         assert await hass.config_entries.async_setup(entry.entry_id)
@@ -485,7 +493,7 @@ async def test_v03_registry_upgrade_reuses_deadline_entities_and_is_idempotent(
 async def test_registry_migration_prefers_existing_target_on_conflict(
     hass: HomeAssistant,
 ) -> None:
-    """A used target survives when the matching legacy entity also exists."""
+    """An active suffixed target takes over the canonical legacy entity ID."""
     entry = _entry((7,))
     entry.add_to_hass(hass)
     entity_registry = er.async_get(hass)
@@ -494,17 +502,30 @@ async def test_registry_migration_prefers_existing_target_on_conflict(
         DOMAIN,
         f"{entry.entry_id}_7_end",
         config_entry=entry,
-        suggested_object_id="legacy_deadline",
+        suggested_object_id="groupalarm_ha_connect_alpha_ruckmeldefrist_ende",
     )
     target = entity_registry.async_get_or_create(
         "sensor",
         DOMAIN,
         build_entity_unique_id(41, 7, "feedback_deadline"),
         config_entry=entry,
-        suggested_object_id="used_deadline",
+        suggested_object_id="groupalarm_ha_connect_alpha_ruckmeldefrist_ende",
+    )
+    assert target.entity_id == f"{legacy.entity_id}_2"
+    entity_registry.async_update_entity(
+        legacy.entity_id,
+        disabled_by=er.RegistryEntryDisabler.USER,
+        icon="mdi:timer-sand",
+        labels={"legacy-label"},
+    )
+    entity_registry.async_update_entity_options(
+        legacy.entity_id,
+        "sensor",
+        {"display_precision": 0},
     )
     entity_registry.async_update_entity(
         target.entity_id,
+        labels={"target-label"},
         name="Verwendete Zielentität",
     )
 
@@ -521,12 +542,102 @@ async def test_registry_migration_prefers_existing_target_on_conflict(
         organization_ids={7},
     )
 
-    assert entity_registry.async_get(legacy.entity_id) is None
-    retained = entity_registry.async_get(target.entity_id)
+    assert entity_registry.async_get(target.entity_id) is None
+    retained = entity_registry.async_get(legacy.entity_id)
     assert retained is not None
+    assert retained.entity_id == legacy.entity_id
     assert retained.name == "Verwendete Zielentität"
+    assert retained.icon == "mdi:timer-sand"
+    assert retained.disabled_by is er.RegistryEntryDisabler.USER
+    assert retained.labels == {"legacy-label", "target-label"}
+    assert retained.options["sensor"]["display_precision"] == 0
     assert retained.unique_id == build_entity_unique_id(
         41,
         7,
         "feedback_deadline",
+    )
+
+
+async def test_v051_suffixed_deadline_conflicts_are_repaired_on_upgrade(
+    hass: HomeAssistant,
+) -> None:
+    """The real v0.3 to v0.5.1 conflict path returns to canonical IDs."""
+    entry = _entry((7,))
+    entry.add_to_hass(hass)
+    entity_registry = er.async_get(hass)
+
+    legacy_deadline = entity_registry.async_get_or_create(
+        "sensor",
+        DOMAIN,
+        f"{entry.entry_id}_7_end",
+        config_entry=entry,
+        suggested_object_id="groupalarm_ha_connect_alpha_ruckmeldefrist_ende",
+    )
+    legacy_countdown = entity_registry.async_get_or_create(
+        "sensor",
+        DOMAIN,
+        f"{entry.entry_id}_7_countdown",
+        config_entry=entry,
+        suggested_object_id="groupalarm_ha_connect_alpha_ruckmeldefrist_countdown",
+    )
+    target_deadline = entity_registry.async_get_or_create(
+        "sensor",
+        DOMAIN,
+        build_entity_unique_id(41, 7, "feedback_deadline"),
+        config_entry=entry,
+        suggested_object_id="groupalarm_ha_connect_alpha_ruckmeldefrist_ende",
+    )
+    target_countdown = entity_registry.async_get_or_create(
+        "sensor",
+        DOMAIN,
+        build_entity_unique_id(41, 7, "feedback_countdown"),
+        config_entry=entry,
+        suggested_object_id="groupalarm_ha_connect_alpha_ruckmeldefrist_countdown",
+    )
+    legacy_address = entity_registry.async_get_or_create(
+        "sensor",
+        DOMAIN,
+        f"{entry.entry_id}_7_address",
+        config_entry=entry,
+        suggested_object_id="groupalarm_ha_connect_alpha_einsatzort",
+    )
+
+    assert target_deadline.entity_id == f"{legacy_deadline.entity_id}_2"
+    assert target_countdown.entity_id == f"{legacy_countdown.entity_id}_2"
+
+    patches = _api_patches()
+    with patches[0], patches[1], patches[2], patches[3], patches[4]:
+        assert await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done()
+
+        assert (
+            entity_registry.async_get_entity_id(
+                "sensor",
+                DOMAIN,
+                build_entity_unique_id(41, 7, "feedback_deadline"),
+            )
+            == legacy_deadline.entity_id
+        )
+        assert (
+            entity_registry.async_get_entity_id(
+                "sensor",
+                DOMAIN,
+                build_entity_unique_id(41, 7, "feedback_countdown"),
+            )
+            == legacy_countdown.entity_id
+        )
+        assert entity_registry.async_get(target_deadline.entity_id) is None
+        assert entity_registry.async_get(target_countdown.entity_id) is None
+        assert entity_registry.async_get(legacy_address.entity_id) is None
+
+        assert await hass.config_entries.async_unload(entry.entry_id)
+        assert await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done()
+
+    current_entries = er.async_entries_for_config_entry(
+        entity_registry,
+        entry.entry_id,
+    )
+    assert not any(
+        registry_entry.entity_id.endswith("_2") for registry_entry in current_entries
     )

@@ -4,6 +4,26 @@ All notable changes to this project are documented in this file.
 
 ## [Unreleased]
 
+## [0.5.3] - 2026-08-13
+
+### Fixed
+
+- Merge existing v0.5 target entities with `_2` suffixes back into the
+  canonical legacy Entity IDs while retaining the active v0.5 Unique IDs and
+  relevant user registry customizations.
+- Remove obsolete legacy `Einsatzort`, `Latitude`, and `Longitude` sensors
+  during registry migration.
+- Prevent the wall-display template from rendering `unknown Sekunden` or
+  `unavailable Sekunden` when the countdown state is not numeric.
+- Use the actual `positive` and `negative` feedback-counter Entity IDs in the
+  wall-display examples.
+
+### Changed
+
+- Display a numeric active countdown in the same 34-pixel size as the feedback
+  counters and in the Home Assistant warning color; all other deadline states
+  retain the standard text color and size.
+
 ## [0.5.2] - 2026-07-30
 
 ### Fixed

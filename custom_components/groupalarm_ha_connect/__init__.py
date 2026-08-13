@@ -50,6 +50,7 @@ _LEGACY_ENTITY_KEY_MIGRATIONS = {
     ("sensor", "countdown"): "feedback_countdown",
 }
 _REMOVED_LEGACY_ENTITY_KEYS = {
+    ("sensor", "address"),
     ("sensor", "latitude"),
     ("sensor", "longitude"),
 }
@@ -148,7 +149,72 @@ def _migrate_registries(
             new_unique_id,
         )
         if duplicate is not None and duplicate != registry_entry.entity_id:
-            entity_registry.async_remove(registry_entry.entity_id)
+            target_entry = entity_registry.async_get(duplicate)
+            if (
+                target_entry is not None
+                and target_entry.config_entry_id == entry.entry_id
+            ):
+                aliases = list(target_entry.aliases)
+                aliases.extend(
+                    alias for alias in registry_entry.aliases if alias not in aliases
+                )
+                categories = {
+                    **registry_entry.categories,
+                    **target_entry.categories,
+                }
+                labels = registry_entry.labels | target_entry.labels
+                options = {
+                    **registry_entry.options,
+                    **target_entry.options,
+                }
+                canonical_entity_id = registry_entry.entity_id
+                entity_registry.async_remove(canonical_entity_id)
+                merged_entry = entity_registry.async_update_entity(
+                    target_entry.entity_id,
+                    aliases=aliases,
+                    area_id=(
+                        target_entry.area_id
+                        if target_entry.area_id is not None
+                        else registry_entry.area_id
+                    ),
+                    categories=categories,
+                    device_class=(
+                        target_entry.device_class
+                        if target_entry.device_class is not None
+                        else registry_entry.device_class
+                    ),
+                    disabled_by=(
+                        target_entry.disabled_by
+                        if target_entry.disabled_by is not None
+                        else registry_entry.disabled_by
+                    ),
+                    hidden_by=(
+                        target_entry.hidden_by
+                        if target_entry.hidden_by is not None
+                        else registry_entry.hidden_by
+                    ),
+                    icon=(
+                        target_entry.icon
+                        if target_entry.icon is not None
+                        else registry_entry.icon
+                    ),
+                    labels=labels,
+                    name=(
+                        target_entry.name
+                        if target_entry.name is not None
+                        else registry_entry.name
+                    ),
+                    new_entity_id=canonical_entity_id,
+                )
+                for option_domain, domain_options in options.items():
+                    if merged_entry.options.get(option_domain) != domain_options:
+                        merged_entry = entity_registry.async_update_entity_options(
+                            merged_entry.entity_id,
+                            option_domain,
+                            domain_options,
+                        )
+            else:
+                entity_registry.async_remove(registry_entry.entity_id)
             continue
         entity_registry.async_update_entity(
             registry_entry.entity_id,
